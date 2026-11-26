@@ -20,6 +20,14 @@ The repository currently contains the initial application foundation:
 
 This is **not yet a complete or production-ready system**. Authentication, operational APIs, submission workflows, email scheduling, threshold/RAG logic, AI extraction, management reports and ORMSS integration remain to be implemented and tested.
 
+## KRI PDF report generator (first working module)
+
+The application now includes a dataset upload page at `/kri-report` and API endpoints:
+- `GET /kri/template` downloads a sample CSV.
+- `POST /kri/report` accepts a CSV or Excel file and returns a PDF report.
+
+Required columns: `KRI`, `Department`, `Period`, `Actual`, `Green_Limit`, `Red_From`. Optional `Direction` is `HIGHER` (default) or `LOWER`. For HIGHER, values at/below Green_Limit are Green and at/above Red_From are Red. For LOWER, values at/above Green_Limit are Green and at/below Red_From are Red. Values between the limits are Amber. This first module processes the file in memory and does not save uploaded data.
+
 ## Run the development foundation
 
 1. Install Docker Desktop.
