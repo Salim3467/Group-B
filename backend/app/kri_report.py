@@ -87,6 +87,8 @@ async def create_kri_report(file: UploadFile = File(...)):
 
     if "Direction" not in data.columns:
         data["Direction"] = "HIGHER"
+    else:
+        data["Direction"] = data["Direction"].fillna("HIGHER").replace("", "HIGHER")
     statuses = []
     try:
         for _, row in data.iterrows():
