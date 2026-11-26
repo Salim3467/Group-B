@@ -36,3 +36,7 @@ h2 { color: var(--navy); font-size: 22px; margin: 0; letter-spacing: -.4px; }
 .moduleCard p { color: var(--muted); font-size: 11px; line-height: 1.6; margin: 0; }
 footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; margin-top: 36px; padding-top: 18px; display: flex; justify-content: space-between; }
 @media (max-width: 760px) { .shell { padding: 0 18px 24px; } .welcome { display: block; padding: 42px 0 28px; } .welcomePanel { width: 100%; margin-top: 25px; } .stats, .moduleGrid { grid-template-columns: 1fr; } .sectionHead { display: block; } .sectionNote { display: block; margin-top: 8px; } footer { gap: 10px; flex-direction: column; } }
+
+.quickAction { display: flex; align-items: center; justify-content: space-between; gap: 18px; background: #edf6f5; border: 1px solid #d9e8e7; border-radius: 12px; padding: 18px 20px; margin: 0 0 22px; }
+.quickAction strong, .quickAction span { display: block; }.quickAction strong { color: var(--navy); font-size: 14px; }.quickAction span { color: var(--muted); font-size: 11px; margin-top: 5px; }.quickAction a { color: var(--teal); text-decoration: none; font-size: 12px; font-weight: 700; white-space: nowrap; }
+@media (max-width: 650px) { .quickAction { align-items: flex-start; flex-direction: column; } }
