@@ -41,14 +41,15 @@ function addWorkingDays(start: Date, days: number) {
   const date = new Date(start);
   let added = 0;
   while (added < days) {
-    date.setDate(date.getDate() + 1);
     if (date.getDay() !== 0 && date.getDay() !== 6) added++;
+    if (added < days) date.setDate(date.getDate() + 1);
   }
-  return date.toISOString().slice(0, 10);
+  return [date.getFullYear(), String(date.getMonth()+1).padStart(2,"0"), String(date.getDate()).padStart(2,"0")].join("-");
 }
 function statusFor(metric: Metric, raw: string) {
   if (raw.trim() === "" || !Number.isFinite(Number(raw))) return "NOT REPORTED";
   const n = Number(raw);
+  if (metric.id === "HR-01") return n < metric.appetite ? "GREEN" : n <= metric.tolerance ? "AMBER" : "RED";
   if (metric.direction === "HIGHER") return n <= metric.appetite ? "GREEN" : n < metric.tolerance ? "AMBER" : "RED";
   return n >= metric.appetite ? "GREEN" : n > metric.tolerance ? "AMBER" : "RED";
 }
@@ -103,12 +104,12 @@ export default function KriWorkspace() {
     const existing = submissions.filter(s => s.period === period).map(s => s.department);
     const missing = activeDepts.filter(d => !existing.includes(d));
     if (!missing.length) { setMessage("A collection cycle for this period already exists."); return; }
-    const requestDate = new Date();
-    const due = addWorkingDays(requestDate, 13);
+    const requestDate = new Date(cycleDate + "T00:00:00");
+    const nextMonthStart = new Date(requestDate.getFullYear(), requestDate.getMonth() + 1, 1);
     const created = missing.map(department => ({
       id: newId(), department, period,
       frequency: department === "Human Resources" ? "Quarterly" : "Monthly",
-      dueDate: due, status: "REQUESTED" as const, requestedAt: today(), reminders: 0,
+      dueDate: addWorkingDays(department === "Human Resources" ? nextMonthStart : requestDate, 13), status: "REQUESTED" as const, requestedAt: cycleDate, reminders: 0,
       lastReminder: "", submittedAt: "", reviewedAt: "", reviewerNote: "",
       values: Object.fromEntries(metrics.filter(m => m.department === department).map(m => [m.id, blankValue()]))
     }));
