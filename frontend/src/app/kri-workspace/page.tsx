@@ -33,7 +33,7 @@ const initialMetrics: Metric[] = [
 ];
 
 const departments = ["Information Technology", "Digital Banking", "Human Resources"];
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => { const d = new Date(); return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-"); };
 const fmt = (value: string) => value ? new Date(value + "T00:00:00").toLocaleDateString("en-GB") : "—";
 const blankValue = (): Value => ({ actual: "", occurred: "", location: "", remarks: "" });
 
@@ -56,7 +56,7 @@ function newId() { return `SUB-${Date.now()}-${Math.random().toString(36).slice(
 
 export default function KriWorkspace() {
   const [tab, setTab] = useState("Overview");
-  const [period, setPeriod] = useState("2083/08");
+  const [period, setPeriod] = useState("2083/08");\n  const [cycleDate, setCycleDate] = useState(today());
   const [includeHR, setIncludeHR] = useState(true);
   const [metrics, setMetrics] = useState<Metric[]>(initialMetrics);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -113,7 +113,7 @@ export default function KriWorkspace() {
       values: Object.fromEntries(metrics.filter(m => m.department === department).map(m => [m.id, blankValue()]))
     }));
     setSubmissions(old => [...old, ...created]);
-    missing.forEach(d => logAction(d, "Request issued (simulated)", `KRI request for ${period}; due ${fmt(due)}.`));
+    created.forEach(s => logAction(s.department, "Request issued (simulated)", `KRI request for ${period}; due ${fmt(s.dueDate)}.`));
     setMessage(`Collection cycle created for ${missing.join(", ")}. Email dispatch is simulated in this demonstration.`);
   }
   function sendReminder(s: Submission) {
@@ -217,8 +217,8 @@ export default function KriWorkspace() {
 
           {tab === "Collection" && <>
             <section className="panel"><div className="panelHead"><div><small>STEP 01 · REPORTING CYCLE</small><h3>Create and track department requests</h3></div></div>
-              <div className="formGrid"><label>Reporting period (Nepali calendar / bank period)<input value={period} onChange={e=>setPeriod(e.target.value)} /></label><label className="checkLabel"><input type="checkbox" checked={includeHR} onChange={e=>setIncludeHR(e.target.checked)}/> Include quarterly HR submission in this cycle</label></div>
-              <div className="processRule"><b>Configured process:</b> IT and Digital Banking monthly; HR quarterly. Request at 10:00 AM on the first day of the applicable cycle; follow up every 3 working days; submission deadline within 13 working days. This demo calculates a weekday-only due date from the date the cycle is created; public holidays are not applied.</div>
+              <div className="formGrid"><label>Reporting period (Nepali calendar / bank period)<input value={period} onChange={e=>setPeriod(e.target.value)} /></label><label>Cycle start date (first day of applicable month)<input type="date" value={cycleDate} onChange={e=>setCycleDate(e.target.value)} /></label><label className="checkLabel"><input type="checkbox" checked={includeHR} onChange={e=>setIncludeHR(e.target.checked)}/> Include quarterly HR submission in this cycle</label></div>
+              <div className="processRule"><b>Configured process:</b> IT and Digital Banking monthly; HR quarterly. Request at 10:00 AM on the first day of the applicable cycle; follow up every 3 working days; submission deadline within 13 working days. IT / Digital Banking due date: 13th working day of the selected cycle month. HR due date: 13th working day of the succeeding month. Weekends are excluded; public holidays are not applied in this demo.</div>
               <button className="primaryBtn" onClick={startCycle}>＋ Create cycle & issue requests</button>
             </section>
             <section className="panel"><div className="panelHead"><div><small>STEP 02 · SUBMISSION TRACKING</small><h3>Department reporting status</h3></div></div>
@@ -230,7 +230,7 @@ export default function KriWorkspace() {
           {tab === "Department entry" && selected && <>
             <section className="panel"><div className="panelHead"><div><small>DEPARTMENT PORTAL · {selected.period}</small><h3>{selected.department} KRI submission</h3></div><span className={`stateTag ${selected.status.toLowerCase()}`}>{selected.status}</span></div>
               <p className="mutedText">Enter the values from the department's existing template. All fields below are saved in this browser as you work.</p>
-              {metrics.filter(m=>m.department===selected.department).map(m=>{const v=selected.values[m.id]??blankValue();return <div className="metricForm" key={m.id}><div className="metricFormHead"><b>{m.id} · {m.name}</b><span>{m.unit}</span></div><div className="formGrid"><label>Actual value<input type="number" step="any" value={v.actual} onChange={e=>updateValue(selected.id,m.id,"actual",e.target.value)} /></label>{m.department!=="Human Resources"&&<label>Downtime occurred?<select value={v.occurred} onChange={e=>updateValue(selected.id,m.id,"occurred",e.target.value)}><option value="">Select</option><option>Yes</option><option>No</option></select></label>}{m.department!=="Human Resources"&&<label>Location / affected service<input value={v.location} onChange={e=>updateValue(selected.id,m.id,"location",e.target.value)} /></label>}<label>Remarks / explanation<input value={v.remarks} onChange={e=>updateValue(selected.id,m.id,"remarks",e.target.value)} /></label></div><p className="thresholdHint">Appetite: {m.appetite} {m.unit} · Tolerance: {m.tolerance} {m.unit} · {m.approved?"Approved limit marked":"Illustrative limit – approval pending"}</p></div>})}
+              {metrics.filter(m=>m.department===selected.department).map(m=>{const v=selected.values[m.id]??blankValue();return <div className="metricForm" key={m.id}><div className="metricFormHead"><b>{m.id} · {m.name}</b><span>{m.unit}</span></div><div className="formGrid"><label>Actual value<input type="number" step="any" value={v.actual} onChange={e=>updateValue(selected.id,m.id,"actual",e.target.value)} /></label>{m.department!=="Human Resources"&&<label>Downtime occurred?<select value={v.occurred} onChange={e=>updateValue(selected.id,m.id,"occurred",e.target.value)}><option value="">Select</option><option>Yes</option><option>No</option></select></label>}{m.department!=="Human Resources"&&<label>Location / affected service<input value={v.location} onChange={e=>updateValue(selected.id,m.id,"location",e.target.value)} /></label>}<label>Remarks / explanation<input value={v.remarks} onChange={e=>updateValue(selected.id,m.id,"remarks",e.target.value)} /></label></div><p className="thresholdHint">{m.id==="HR-01" ? `Green < ${m.appetite}% · Amber > ${m.appetite}% to ${m.tolerance}% · Red > ${m.tolerance}%` : `Appetite: ${m.appetite} ${m.unit} · Tolerance: ${m.tolerance} ${m.unit}`} · {m.approved?"Approved limit marked":"Illustrative limit – approval pending"}</p></div>})}
               <div className="actionRow"><button className="primaryBtn" onClick={()=>submitDepartment(selected)} disabled={selected.status==="APPROVED"}>Submit to ORMD for review</button><button className="secondaryBtn" onClick={()=>{setSelectedId("");setTab("Collection");}}>Back to tracker</button></div>
             </section>
           </>}
