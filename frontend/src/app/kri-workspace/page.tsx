@@ -144,7 +144,7 @@ export default function KriWorkspace() {
     setMessage(`Submission ${decision.toLowerCase()}.`);
   }
   function updateMetric(id: string, field: keyof Metric, value: string | number | boolean) {
-    setMetrics(old => old.map(m => m.id === id ? { ...m, [field]: value, source: field === "approved" && value === true ? "Marked approved in demo workspace" : m.source } : m));
+    setMetrics(old => old.map(m => m.id === id ? ({ ...m, [field]: value, source: field === "approved" && value === true ? "Marked approved in demo workspace" : m.source } as Metric) : m));
   }
   async function generatePdf() {
     const rows = approvedAssessed.filter(x => x.metric.appetite !== null && x.metric.tolerance !== null);
