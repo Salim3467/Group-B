@@ -15,24 +15,107 @@ router = APIRouter(prefix="/kri", tags=["KRI report generator"])
 
 REQUIRED_COLUMNS = ["KRI", "Department", "Period", "Actual", "Green_Limit", "Red_From"]
 
+# Common labels used by departments in different spreadsheet templates.
+# Matching is deliberately based on explicit aliases, not guessed from cell values.
+COLUMN_ALIASES = {
+    "KRI": ["kri", "kri name", "indicator", "indicator name", "key risk indicator", "risk indicator", "risk metric", "metric", "parameter", "measure"],
+    "Department": ["department", "department name", "unit", "business unit", "business function", "division", "office", "owner department", "responsible department"],
+    "Period": ["period", "reporting period", "reporting month", "month", "month year", "report month", "as of date", "date", "month end"],
+    "Actual": ["actual", "actual value", "current value", "reported value", "value", "result", "achieved", "current month value", "observed value"],
+    "Green_Limit": ["green limit", "green threshold", "green", "green target", "appetite limit", "tolerance limit", "acceptable limit", "threshold green", "green boundary"],
+    "Red_From": ["red from", "red threshold", "red limit", "red", "red trigger", "critical threshold", "breach limit", "threshold red", "red boundary"],
+    "Direction": ["direction", "risk direction", "indicator direction", "trend direction", "higher lower", "risk polarity"],
+}
 
-@router.get("/template")
-def download_template():
-    sample = pd.DataFrame([
-        {"KRI": "System downtime (hours)", "Department": "ICT", "Period": "2026-10",
-         "Actual": 3.5, "Green_Limit": 2, "Red_From": 5, "Direction": "HIGHER"},
-        {"KRI": "Customer complaints", "Department": "Operations", "Period": "2026-10",
-         "Actual": 120, "Green_Limit": 100, "Red_From": 150, "Direction": "HIGHER"},
-        {"KRI": "Reconciliation completion (%)", "Department": "Finance", "Period": "2026-10",
-         "Actual": 98, "Green_Limit": 95, "Red_From": 90, "Direction": "LOWER"},
-    ])
-    stream = StringIO()
-    sample.to_csv(stream, index=False)
-    return Response(
-        content=stream.getvalue(),
-        media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="kri_upload_template.csv"'},
-    )
+def normalize_header(value):
+    import re
+    text = str(value).strip().lower().replace("%", " percent ")
+    return re.sub(r"[^a-z0-9]+", " ", text).strip()
+
+ALIAS_LOOKUP = {
+    normalize_header(alias): canonical
+    for canonical, aliases in COLUMN_ALIASES.items()
+    for alias in aliases
+}
+
+def read_dataset(raw, filename):
+    """Find the most likely header row in the first ten rows, then read the sheet."""
+    reader = pd.read_csv if filename.endswith(".csv") else pd.read_excel
+    try:
+        preview = reader(BytesIO(raw), header=None, nrows=10)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not read the dataset: {exc}") from exc
+    best_row, best_score = 0, -1
+    for index, row in preview.iterrows():
+        mapped = [ALIAS_LOOKUP.get(normalize_header(value)) for value in row if pd.notna(value)]
+        score = len(set(value for value in mapped if value))
+        if score > best_score:
+            best_row, best_score = int(index), score
+    if best_score < 4:
+        detected = [str(value) for value in preview.iloc[best_row].tolist() if pd.notna(value)]
+        raise HTTPException(
+            status_code=422,
+            detail="Could not confidently identify the column headings. Include clear headings for KRI, Department, Period, Actual, Green threshold and Red threshold. Detected headings: " + ", ".join(detected[:20]),
+        )
+    try:
+        data = reader(BytesIO(raw), header=best_row)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not read the dataset using detected header row {best_row + 1}: {exc}") from exc
+    data.columns = [str(column).strip() for column in data.columns]
+    return data, best_row
+
+def map_columns(data):
+    mapped = {}
+    conflicts = {}
+    for column in data.columns:
+        canonical = ALIAS_LOOKUP.get(normalize_header(column))
+        if canonical:
+            if canonical in mapped:
+                conflicts.setdefault(canonical, [mapped[canonical]]).append(str(column))
+            else:
+                mapped[canonical] = str(column)
+    return mapped, conflicts
+
+def normalize_dataset(data):
+    mapped, conflicts = map_columns(data)
+    if conflicts:
+        details = "; ".join(f"{key}: {', '.join(values)}" for key, values in conflicts.items())
+        raise HTTPException(status_code=422, detail=f"Multiple columns match the same KRI field ({details}). Please keep only one matching column for each field.")
+    missing = [column for column in REQUIRED_COLUMNS if column not in mapped]
+    if missing:
+        available = ", ".join(str(column) for column in data.columns[:30])
+        raise HTTPException(
+            status_code=422,
+            detail=f"Could not identify required fields: {', '.join(missing)}. Available headings: {available}. Rename the headings using the sample template labels or common alternatives.",
+        )
+    rename = {source: target for target, source in mapped.items()}
+    data = data.rename(columns=rename).copy()
+    return data, mapped
+
+@router.post("/inspect")
+async def inspect_kri_dataset(file: UploadFile = File(...)):
+    filename = (file.filename or "").lower()
+    if not (filename.endswith(".csv") or filename.endswith(".xlsx") or filename.endswith(".xls")):
+        raise HTTPException(status_code=400, detail="Upload a CSV or Excel file (.csv, .xlsx, .xls).")
+    raw = await file.read()
+    if len(raw) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File size must not exceed 10 MB.")
+    data, header_row = read_dataset(raw, filename)
+    if data.empty:
+        raise HTTPException(status_code=422, detail="The uploaded dataset has no data rows.")
+    mapped, conflicts = map_columns(data)
+    missing = [column for column in REQUIRED_COLUMNS if column not in mapped]
+    return {
+        "file_name": file.filename,
+        "header_row": header_row + 1,
+        "data_rows": int(len(data)),
+        "detected_columns": [{"field": field, "source_column": source} for field, source in mapped.items()],
+        "missing_fields": missing,
+        "optional_direction": mapped.get("Direction", "Defaults to HIGHER"),
+        "ambiguous_fields": conflicts,
+        "ready": not missing and not conflicts,
+        "sample_rows": data.head(3).fillna("").astype(str).to_dict(orient="records"),
+    }
 
 
 def assess(row):
@@ -59,24 +142,13 @@ async def create_kri_report(file: UploadFile = File(...)):
     raw = await file.read()
     if len(raw) > 10 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="File size must not exceed 10 MB.")
-    try:
-        data = pd.read_csv(BytesIO(raw)) if filename.endswith(".csv") else pd.read_excel(BytesIO(raw))
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Could not read the dataset: {exc}") from exc
-
-    data.columns = [str(column).strip() for column in data.columns]
-    missing = [column for column in REQUIRED_COLUMNS if column not in data.columns]
-    if missing:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Missing required columns: {', '.join(missing)}. Download the sample template for the required format.",
-        )
+    data, header_row = read_dataset(raw, filename)
     if data.empty:
         raise HTTPException(status_code=422, detail="The uploaded dataset has no rows.")
     if len(data) > 5000:
         raise HTTPException(status_code=413, detail="A maximum of 5,000 KRI rows can be processed at once.")
+    data, detected_mapping = normalize_dataset(data)
 
-    data = data.copy()
     data["Actual"] = pd.to_numeric(data["Actual"], errors="coerce")
     data["Green_Limit"] = pd.to_numeric(data["Green_Limit"], errors="coerce")
     data["Red_From"] = pd.to_numeric(data["Red_From"], errors="coerce")
