@@ -57,7 +57,8 @@ function newId() { return `SUB-${Date.now()}-${Math.random().toString(36).slice(
 
 export default function KriWorkspace() {
   const [tab, setTab] = useState("Overview");
-  const [period, setPeriod] = useState("2083/08");\n  const [cycleDate, setCycleDate] = useState(today());
+  const [period, setPeriod] = useState("2083/08");
+  const [cycleDate, setCycleDate] = useState(today());
   const [includeHR, setIncludeHR] = useState(true);
   const [metrics, setMetrics] = useState<Metric[]>(initialMetrics);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -90,7 +91,9 @@ export default function KriWorkspace() {
     .filter(m => m.department === s.department)
     .map(m => ({ submission: s, metric: m, value: s.values[m.id] ?? blankValue() }))
     .filter(x => x.value.actual.trim() !== "")), [submissions, metrics]);
-  const rag = assessed.reduce((a, x) => { a[statusFor(x.metric, x.value.actual)] = (a[statusFor(x.metric, x.value.actual)] ?? 0) + 1; return a; }, { GREEN: 0, AMBER: 0, RED: 0, "NOT REPORTED": 0, "THRESHOLD GAP": 0 } as Record<string, number>);\n  const approvedAssessed = assessed.filter(x => x.submission.status === "APPROVED");\n  const approvedRag = approvedAssessed.reduce((a, x) => { const status = statusFor(x.metric, x.value.actual); a[status] = (a[status] ?? 0) + 1; return a; }, { GREEN: 0, AMBER: 0, RED: 0, "THRESHOLD GAP": 0 } as Record<string, number>);
+  const rag = assessed.reduce((a, x) => { a[statusFor(x.metric, x.value.actual)] = (a[statusFor(x.metric, x.value.actual)] ?? 0) + 1; return a; }, { GREEN: 0, AMBER: 0, RED: 0, "NOT REPORTED": 0, "THRESHOLD GAP": 0 } as Record<string, number>);
+  const approvedAssessed = assessed.filter(x => x.submission.status === "APPROVED");
+  const approvedRag = approvedAssessed.reduce((a, x) => { const status = statusFor(x.metric, x.value.actual); a[status] = (a[status] ?? 0) + 1; return a; }, { GREEN: 0, AMBER: 0, RED: 0, "THRESHOLD GAP": 0 } as Record<string, number>);
   const pending = submissions.filter(s => s.status === "REQUESTED" || s.status === "RETURNED").length;
   const reviewQueue = submissions.filter(s => s.status === "SUBMITTED");
   const totalExpected = submissions.reduce((n, s) => n + metrics.filter(m => m.department === s.department).length, 0);
