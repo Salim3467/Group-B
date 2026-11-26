@@ -99,8 +99,8 @@ export default function KriReportPage() {
         <label className="dropZone" htmlFor="dataset">
           <span className="uploadIcon">↑</span>
           <strong>{file ? file.name : "Choose a CSV or Excel file"}</strong>
-          <span>{file ? `${(file.size / 1024).toFixed(1)} KB · Selected` : "Click to browse · .csv, .xlsx or .xls · Maximum 10 MB"}</span>
-          <input id="dataset" type="file" accept=".csv,.xlsx,.xls" onChange={onFileChange} />
+          <span>{file ? `${(file.size / 1024).toFixed(1)} KB · Selected` : "Click to browse · .csv or .xlsx · Maximum 10 MB"}</span>
+          <input id="dataset" type="file" accept=".csv,.xlsx" onChange={onFileChange} />
         </label>
 
         {inspecting && <p className="feedback">Reading file and detecting column headings…</p>}
