@@ -53,6 +53,10 @@ function statusFor(metric: Metric, raw: string) {
   if (metric.direction === "HIGHER") return n <= metric.appetite ? "GREEN" : n < metric.tolerance ? "AMBER" : "RED";
   return n >= metric.appetite ? "GREEN" : n > metric.tolerance ? "AMBER" : "RED";
 }
+function displayStatus(s: Submission) {
+  if ((s.status === "REQUESTED" || s.status === "RETURNED") && s.dueDate < today()) return "OVERDUE";
+  return s.status;
+}
 function newId() { return `SUB-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`; }
 
 export default function KriWorkspace() {
@@ -95,6 +99,7 @@ export default function KriWorkspace() {
   const approvedAssessed = assessed.filter(x => x.submission.status === "APPROVED");
   const approvedRag = approvedAssessed.reduce((a, x) => { const status = statusFor(x.metric, x.value.actual); a[status] = (a[status] ?? 0) + 1; return a; }, { GREEN: 0, AMBER: 0, RED: 0, "THRESHOLD GAP": 0 } as Record<string, number>);
   const pending = submissions.filter(s => s.status === "REQUESTED" || s.status === "RETURNED").length;
+  const overdue = submissions.filter(s => (s.status === "REQUESTED" || s.status === "RETURNED") && s.dueDate < today()).length;
   const reviewQueue = submissions.filter(s => s.status === "SUBMITTED");
   const totalExpected = submissions.reduce((n, s) => n + metrics.filter(m => m.department === s.department).length, 0);
   const totalReported = assessed.length;
@@ -206,6 +211,7 @@ export default function KriWorkspace() {
               <article><small>KRIs REPORTED</small><strong>{totalReported}<i> / {totalExpected}</i></strong><span>Values captured in current records</span></article>
               <article><small>RED INDICATORS</small><strong className="redNum">{rag.RED ?? 0}</strong><span>Require attention</span></article>
               <article><small>PENDING / RETURNED</small><strong className="amberNum">{pending}</strong><span>Awaiting department action</span></article>
+              <article><small>OVERDUE SUBMISSIONS</small><strong className="redNum">{overdue}</strong><span>Past the configured due date</span></article>
             </div>
             <div className="twoCol">
               <section className="panel"><div className="panelHead"><div><small>RISK POSITION</small><h3>Reported KRI status</h3></div><button className="linkBtn" onClick={()=>setTab("Reports")}>View report →</button></div>
@@ -213,7 +219,7 @@ export default function KriWorkspace() {
                 <p className="mutedText">Status is calculated using the limits currently entered in the KRI inventory. Confirm approval status before relying on classifications.</p>
               </section>
               <section className="panel"><div className="panelHead"><div><small>COLLECTION TRACKER</small><h3>Department submissions</h3></div><button className="linkBtn" onClick={()=>setTab("Collection")}>Manage →</button></div>
-                {submissions.length===0?<p className="emptyText">No reporting cycle has been started. Create one to begin the demonstration.</p>:submissions.slice().reverse().slice(0,5).map(s=><div className="trackerRow" key={s.id}><div><b>{s.department}</b><small>{s.period} · Due {fmt(s.dueDate)}</small></div><span className={`stateTag ${s.status.toLowerCase()}`}>{s.status}</span></div>)}
+                {submissions.length===0?<p className="emptyText">No reporting cycle has been started. Create one to begin the demonstration.</p>:submissions.slice().reverse().slice(0,5).map(s=><div className="trackerRow" key={s.id}><div><b>{s.department}</b><small>{s.period} · Due {fmt(s.dueDate)}</small></div><span className={`stateTag ${displayStatus(s).toLowerCase()}`}>{displayStatus(s)}</span></div>)}
               </section>
             </div>
             <section className="panel"><div className="panelHead"><div><small>END-TO-END PROCESS</small><h3>Demonstration sequence</h3></div></div><div className="processSteps">{["Create reporting cycle","Department submits KRI values","ORMD reviews submission","Assess against appetite / tolerance","Generate PDF report"].map((x,i)=><div key={x}><span>{String(i+1).padStart(2,"0")}</span><b>{x}</b></div>)}</div></section>
