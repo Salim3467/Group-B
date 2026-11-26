@@ -44,7 +44,7 @@ Required fields: KRI, Department, Period, Actual, Green Limit and Red Threshold.
 
 For HIGHER indicators, values at or below Green Limit are Green, values at or above Red Threshold are Red, and values between are Amber. For LOWER indicators, the reverse applies. Thresholds are used exactly as supplied and must be confirmed against the bank-approved KRI methodology.
 
-Limits: 10 MB upload and 5,000 data rows. Supported formats: CSV, XLSX and XLS.
+Limits: 10 MB upload and 5,000 data rows. Supported formats: CSV and XLSX.
 
 ## Important limitations
 
