@@ -1,18 +1,11 @@
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-.pytest_cache/
-.mypy_cache/
-
-# Node
+# Node / Next.js
 node_modules/
 .next/
 out/
 dist/
+*.tsbuildinfo
 
-# Secrets and local configuration
+# Local configuration and secrets
 .env
 .env.*
 !.env.example
@@ -24,6 +17,6 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Uploads and local database
+# Local uploads / generated files
 uploads/
-*.sqlite3
+*.pdf
