@@ -49,7 +49,7 @@ function addWorkingDays(start: Date, days: number) {
 function statusFor(metric: Metric, raw: string) {
   if (raw.trim() === "" || !Number.isFinite(Number(raw))) return "NOT REPORTED";
   const n = Number(raw);
-  if (metric.id === "HR-01") return n < metric.appetite ? "GREEN" : n <= metric.tolerance ? "AMBER" : "RED";
+  if (metric.id === "HR-01") return n < metric.appetite ? "GREEN" : n === metric.appetite ? "THRESHOLD GAP" : n <= metric.tolerance ? "AMBER" : "RED";
   if (metric.direction === "HIGHER") return n <= metric.appetite ? "GREEN" : n < metric.tolerance ? "AMBER" : "RED";
   return n >= metric.appetite ? "GREEN" : n > metric.tolerance ? "AMBER" : "RED";
 }
@@ -90,7 +90,7 @@ export default function KriWorkspace() {
     .filter(m => m.department === s.department)
     .map(m => ({ submission: s, metric: m, value: s.values[m.id] ?? blankValue() }))
     .filter(x => x.value.actual.trim() !== "")), [submissions, metrics]);
-  const rag = assessed.reduce((a, x) => { a[statusFor(x.metric, x.value.actual)]++; return a; }, { GREEN: 0, AMBER: 0, RED: 0, "NOT REPORTED": 0 } as Record<string, number>);
+  const rag = assessed.reduce((a, x) => { a[statusFor(x.metric, x.value.actual)] = (a[statusFor(x.metric, x.value.actual)] ?? 0) + 1; return a; }, { GREEN: 0, AMBER: 0, RED: 0, "NOT REPORTED": 0, "THRESHOLD GAP": 0 } as Record<string, number>);\n  const approvedAssessed = assessed.filter(x => x.submission.status === "APPROVED");\n  const approvedRag = approvedAssessed.reduce((a, x) => { const status = statusFor(x.metric, x.value.actual); a[status] = (a[status] ?? 0) + 1; return a; }, { GREEN: 0, AMBER: 0, RED: 0, "THRESHOLD GAP": 0 } as Record<string, number>);
   const pending = submissions.filter(s => s.status === "REQUESTED" || s.status === "RETURNED").length;
   const reviewQueue = submissions.filter(s => s.status === "SUBMITTED");
   const totalExpected = submissions.reduce((n, s) => n + metrics.filter(m => m.department === s.department).length, 0);
@@ -147,8 +147,8 @@ export default function KriWorkspace() {
     setMetrics(old => old.map(m => m.id === id ? { ...m, [field]: value, source: field === "approved" && value === true ? "Marked approved in demo workspace" : m.source } : m));
   }
   async function generatePdf() {
-    const rows = assessed.filter(x => x.metric.appetite !== null && x.metric.tolerance !== null);
-    if (!rows.length) { setMessage("No reported KRI values are available for the report."); return; }
+    const rows = approvedAssessed.filter(x => x.metric.appetite !== null && x.metric.tolerance !== null);
+    if (!rows.length) { setMessage("No ORMD-approved KRI values are available for the report."); return; }
     setBusy(true); setMessage("");
     try {
       const header = ["KRI", "Department", "Period", "Actual", "Green_Limit", "Red_From", "Direction"];
@@ -169,7 +169,7 @@ export default function KriWorkspace() {
   }
   function exportCsv() {
     const header = ["KRI_ID","KRI","Department","Period","Actual","Unit","Appetite","Tolerance","Direction","Status","Threshold_Approval","Remarks"];
-    const rows = assessed.map(x => [x.metric.id,x.metric.name,x.metric.department,x.submission.period,x.value.actual,x.metric.unit,x.metric.appetite,x.metric.tolerance,x.metric.direction,statusFor(x.metric,x.value.actual),x.metric.approved ? "Marked approved" : "Not approved",x.value.remarks]);
+    const rows = approvedAssessed.map(x => [x.metric.id,x.metric.name,x.metric.department,x.submission.period,x.value.actual,x.metric.unit,x.metric.appetite,x.metric.tolerance,x.metric.direction,statusFor(x.metric,x.value.actual),x.metric.approved ? "Marked approved" : "Not approved",x.value.remarks]);
     const quote = (v: unknown) => '"' + String(v ?? "").replaceAll('"','""') + '"';
     const csv = [header,...rows].map(r=>r.map(quote).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
@@ -231,7 +231,7 @@ export default function KriWorkspace() {
           {tab === "Department entry" && selected && <>
             <section className="panel"><div className="panelHead"><div><small>DEPARTMENT PORTAL · {selected.period}</small><h3>{selected.department} KRI submission</h3></div><span className={`stateTag ${selected.status.toLowerCase()}`}>{selected.status}</span></div>
               <p className="mutedText">Enter the values from the department's existing template. All fields below are saved in this browser as you work.</p>
-              {metrics.filter(m=>m.department===selected.department).map(m=>{const v=selected.values[m.id]??blankValue();return <div className="metricForm" key={m.id}><div className="metricFormHead"><b>{m.id} · {m.name}</b><span>{m.unit}</span></div><div className="formGrid"><label>Actual value<input type="number" step="any" value={v.actual} onChange={e=>updateValue(selected.id,m.id,"actual",e.target.value)} /></label>{m.department!=="Human Resources"&&<label>Downtime occurred?<select value={v.occurred} onChange={e=>updateValue(selected.id,m.id,"occurred",e.target.value)}><option value="">Select</option><option>Yes</option><option>No</option></select></label>}{m.department!=="Human Resources"&&<label>Location / affected service<input value={v.location} onChange={e=>updateValue(selected.id,m.id,"location",e.target.value)} /></label>}<label>Remarks / explanation<input value={v.remarks} onChange={e=>updateValue(selected.id,m.id,"remarks",e.target.value)} /></label></div><p className="thresholdHint">{m.id==="HR-01" ? `Green < ${m.appetite}% · Amber > ${m.appetite}% to ${m.tolerance}% · Red > ${m.tolerance}%` : `Appetite: ${m.appetite} ${m.unit} · Tolerance: ${m.tolerance} ${m.unit}`} · {m.approved?"Approved limit marked":"Illustrative limit – approval pending"}</p></div>})}
+              {metrics.filter(m=>m.department===selected.department).map(m=>{const v=selected.values[m.id]??blankValue();return <div className="metricForm" key={m.id}><div className="metricFormHead"><b>{m.id} · {m.name}</b><span>{m.unit}</span></div><div className="formGrid"><label>Actual value<input type="number" step="any" value={v.actual} onChange={e=>updateValue(selected.id,m.id,"actual",e.target.value)} /></label>{m.department!=="Human Resources"&&<label>Downtime occurred?<select value={v.occurred} onChange={e=>updateValue(selected.id,m.id,"occurred",e.target.value)}><option value="">Select</option><option>Yes</option><option>No</option></select></label>}{m.department!=="Human Resources"&&<label>Location / affected service<input value={v.location} onChange={e=>updateValue(selected.id,m.id,"location",e.target.value)} /></label>}<label>Remarks / explanation<input value={v.remarks} onChange={e=>updateValue(selected.id,m.id,"remarks",e.target.value)} /></label></div><p className="thresholdHint">{m.id==="HR-01" ? `Green < ${m.appetite}% · Amber > ${m.appetite}% to ${m.tolerance}% · Red > ${m.tolerance}% · exactly ${m.appetite}% not specified in source` : `Appetite: ${m.appetite} ${m.unit} · Tolerance: ${m.tolerance} ${m.unit}`} · {m.approved?"Approved limit marked":"Illustrative limit – approval pending"}</p></div>})}
               <div className="actionRow"><button className="primaryBtn" onClick={()=>submitDepartment(selected)} disabled={selected.status==="APPROVED"}>Submit to ORMD for review</button><button className="secondaryBtn" onClick={()=>{setSelectedId("");setTab("Collection");}}>Back to tracker</button></div>
             </section>
           </>}
@@ -249,7 +249,7 @@ export default function KriWorkspace() {
           {tab === "Reports" && <section className="panel"><div className="panelHead"><div><small>STEP 05 · MANAGEMENT INFORMATION</small><h3>KRI analytics and report generation</h3></div></div>
             <div className="ragSummary"><div><b className="greenNum">{rag.GREEN??0}</b><span>Green</span></div><div><b className="amberNum">{rag.AMBER??0}</b><span>Amber</span></div><div><b className="redNum">{rag.RED??0}</b><span>Red</span></div><div><b>{totalReported}</b><span>Reported values</span></div></div>
             {assessed.length===0?<p className="emptyText">No submitted KRI values yet. Complete the collection process to populate the report.</p>:<div className="tableScroll"><table><thead><tr><th>KRI</th><th>Department</th><th>Period</th><th>Actual</th><th>Appetite</th><th>Tolerance</th><th>Status</th><th>Threshold basis</th></tr></thead><tbody>{assessed.map((x,i)=><tr key={i}><td>{x.metric.name}</td><td>{x.metric.department}</td><td>{x.submission.period}</td><td>{x.value.actual} {x.metric.unit}</td><td>{x.metric.appetite}</td><td>{x.metric.tolerance}</td><td><span className={`ragTag ${statusFor(x.metric,x.value.actual).toLowerCase()}`}>{statusFor(x.metric,x.value.actual)}</span></td><td>{x.metric.approved?"Marked approved":"Illustrative"}</td></tr>)}</tbody></table></div>}
-            <div className="actionRow reportActions"><button className="primaryBtn" onClick={generatePdf} disabled={busy||!assessed.length}>{busy?"Generating PDF…":"↓ Generate analytical PDF report"}</button><button className="secondaryBtn" onClick={exportCsv} disabled={!assessed.length}>Export results to CSV</button></div>
+            <div className="actionRow reportActions"><button className="primaryBtn" onClick={generatePdf} disabled={busy||!approvedAssessed.length}>{busy?"Generating PDF…":"↓ Generate analytical PDF report"}</button><button className="secondaryBtn" onClick={exportCsv} disabled={!approvedAssessed.length}>Export approved results to CSV</button></div>
             <p className="mutedText">PDF report includes department-wise status and KRI-level assessment. Review threshold approval status and commentary before circulation to management.</p>
           </section>}
 
