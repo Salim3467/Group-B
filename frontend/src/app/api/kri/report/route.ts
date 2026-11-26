@@ -14,8 +14,11 @@ export async function POST(request: NextRequest) {
     if (!/\.(csv|xlsx)$/.test(filename)) return NextResponse.json({ detail: "Upload a CSV or Excel file (.csv, .xlsx)." }, { status: 400 });
     if (file.size > 10 * 1024 * 1024) return NextResponse.json({ detail: "File size must not exceed 10 MB." }, { status: 413 });
     const rows = await normalizeDataset(Buffer.from(await file.arrayBuffer()), filename);
-    const counts = { GREEN: 0, AMBER: 0, RED: 0 };
-    rows.forEach(row => counts[row.RAG_Status as keyof typeof counts]++);
+    const counts = { GREEN: 0, AMBER: 0, RED: 0, GAP: 0 };
+    rows.forEach(row => {
+      if (row.RAG_Status === "THRESHOLD GAP") counts.GAP++;
+      else counts[row.RAG_Status as "GREEN" | "AMBER" | "RED"]++;
+    });
     const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 34, bufferPages: true, info: { Title: "Key Risk Indicator Report", Author: "KRI Management System" } });
     const chunks: Buffer[] = [];
     doc.on("data", chunk => chunks.push(Buffer.from(chunk)));
@@ -28,8 +31,8 @@ export async function POST(request: NextRequest) {
     doc.moveDown(0.3).font("Helvetica").fontSize(9).fillColor("#52616b").text("Generated: " + new Date().toLocaleString("en-GB", { timeZone: "Asia/Kathmandu" }) + " (Nepal time)", { align: "center" });
     doc.moveDown(1);
     const summaryY = doc.y;
-    const summary = [["TOTAL KRIs", "GREEN", "AMBER", "RED"], [String(rows.length), String(counts.GREEN), String(counts.AMBER), String(counts.RED)]];
-    const boxWidth = 175;
+    const summary = [["TOTAL KRIs", "GREEN", "AMBER", "RED", "THRESHOLD GAP"], [String(rows.length), String(counts.GREEN), String(counts.AMBER), String(counts.RED), String(counts.GAP)]];
+    const boxWidth = 130;
     summary[0].forEach((label, i) => {
       const x = 34 + i * (boxWidth + 8);
       doc.roundedRect(x, summaryY, boxWidth, 42, 5).fill("#f0f4f7");
@@ -41,9 +44,12 @@ export async function POST(request: NextRequest) {
     const departments = [...new Set(rows.map(r => r.Department))];
     departments.forEach(department => {
       const group = rows.filter(r => r.Department === department);
-      const c = { GREEN: 0, AMBER: 0, RED: 0 };
-      group.forEach(r => c[r.RAG_Status as keyof typeof c]++);
-      doc.font("Helvetica").fontSize(8).fillColor("#253746").text(`${department}: ${group.length} total  |  Green ${c.GREEN}  |  Amber ${c.AMBER}  |  Red ${c.RED}`);
+      const c = { GREEN: 0, AMBER: 0, RED: 0, GAP: 0 };
+      group.forEach(r => {
+        if (r.RAG_Status === "THRESHOLD GAP") c.GAP++;
+        else c[r.RAG_Status as "GREEN" | "AMBER" | "RED"]++;
+      });
+      doc.font("Helvetica").fontSize(8).fillColor("#253746").text(`${department}: ${group.length} total  |  Green ${c.GREEN}  |  Amber ${c.AMBER}  |  Red ${c.RED}  |  Threshold gap ${c.GAP}`);
     });
     doc.moveDown(0.8);
     doc.fillColor(navy).font("Helvetica-Bold").fontSize(12).text("KRI details");
@@ -67,7 +73,7 @@ export async function POST(request: NextRequest) {
       if (index % 2 === 0) doc.rect(34, y - 3, 679, height).fill("#f4f7f9");
       const values = [row.KRI, row.Department, row.Period, row.Actual.toLocaleString(), row.Green_Limit.toLocaleString(), row.Red_From.toLocaleString(), row.Direction, row.RAG_Status];
       columns.forEach((col, i) => {
-        const color = i === 7 ? (row.RAG_Status === "RED" ? "#b42318" : row.RAG_Status === "AMBER" ? "#9a6700" : "#137547") : "#263746";
+        const color = i === 7 ? (row.RAG_Status === "RED" ? "#b42318" : row.RAG_Status === "AMBER" ? "#9a6700" : row.RAG_Status === "THRESHOLD GAP" ? "#667887" : "#137547") : "#263746";
         doc.fillColor(color).font(i === 7 ? "Helvetica-Bold" : "Helvetica").fontSize(7.2).text(String(values[i]), col.x + 3, y + 3, { width: col.w - 6, height: 15, ellipsis: true, lineBreak: false });
       });
       doc.y = y + height;
