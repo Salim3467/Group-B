@@ -28,6 +28,8 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="quickAction"><div><strong>Need a KRI report?</strong><span>Upload a dataset and generate a PDF with automatic RAG assessment.</span></div><a href="/kri-report">Open KRI Report Generator →</a></section>
+
       <section className="stats" aria-label="System overview">
         <div className="stat"><span>USER GROUPS</span><strong>03</strong><small>Departments · Risk · Management</small></div>
         <div className="stat"><span>CORE DATA AREAS</span><strong>10</strong><small>Master, submissions and audit records</small></div>
