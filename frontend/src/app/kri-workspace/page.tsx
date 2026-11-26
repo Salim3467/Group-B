@@ -17,7 +17,7 @@ const starter: Kri[] = [
   { id: "COM-01", department: "Compliance", name: "Overdue regulatory action items", unit: "Count", appetite: 2, tolerance: 5, direction: "HIGHER", actual: "", note: "" },
 ];
 
-const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const api = "";
 const statusFor = (k: Kri, value: number) => {
   if (k.direction === "HIGHER") return value <= k.appetite ? "GREEN" : value < k.tolerance ? "AMBER" : "RED";
   return value >= k.appetite ? "GREEN" : value > k.tolerance ? "AMBER" : "RED";
@@ -63,10 +63,10 @@ export default function KriWorkspace() {
       const csv = [header, ...rows].map(row => row.map(quote).join(",")).join("\n");
       const form = new FormData();
       form.append("file", new Blob([csv], { type: "text/csv" }), "kri-submissions.csv");
-      const response = await fetch(`${api}/kri/report`, { method: "POST", body: form });
+      const response = await fetch(`${api}/api/kri/report`, { method: "POST", body: form });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.detail || "Could not generate the PDF report. Check that the API is running.");
+        throw new Error(data.detail || "Could not generate the PDF report. Please check the uploaded data and try again.");
       }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
