@@ -19,8 +19,8 @@ const starter: Kri[] = [
 
 const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const statusFor = (k: Kri, value: number) => {
-  if (k.direction === "HIGHER") return value <= k.appetite ? "GREEN" : value <= k.tolerance ? "AMBER" : "RED";
-  return value >= k.appetite ? "GREEN" : value >= k.tolerance ? "AMBER" : "RED";
+  if (k.direction === "HIGHER") return value <= k.appetite ? "GREEN" : value < k.tolerance ? "AMBER" : "RED";
+  return value >= k.appetite ? "GREEN" : value > k.tolerance ? "AMBER" : "RED";
 };
 
 export default function KriWorkspace() {
@@ -114,7 +114,7 @@ export default function KriWorkspace() {
                 <label>Direction<select value={k.direction} onChange={e => update(k.id, "direction", e.target.value)}><option value="HIGHER">Higher = more risk</option><option value="LOWER">Lower = more risk</option></select></label>
               </div>
               <label className="noteField">Department explanation / action<textarea value={k.note} onChange={e => update(k.id, "note", e.target.value)} placeholder="Explain the movement, root cause or action being taken…" rows={2} /></label>
-              <p className="thresholdHint">{k.direction === "HIGHER" ? `Green ≤ ${k.appetite} · Amber > ${k.appetite} and ≤ ${k.tolerance} · Red > ${k.tolerance}` : `Green ≥ ${k.appetite} · Amber < ${k.appetite} and ≥ ${k.tolerance} · Red < ${k.tolerance}`}</p>
+              <p className="thresholdHint">{k.direction === "HIGHER" ? `Green ≤ ${k.appetite} · Amber > ${k.appetite} and < ${k.tolerance} · Red ≥ ${k.tolerance}` : `Green ≥ ${k.appetite} · Amber < ${k.appetite} and > ${k.tolerance} · Red ≤ ${k.tolerance}`}</p>
             </article>;
           })}
         </div>
