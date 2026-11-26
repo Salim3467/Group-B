@@ -12,7 +12,7 @@ export default function Home() {
     <main className="shell">
       <header className="topbar">
         <div className="brand"><div className="brandMark">K</div><div><strong>KRI Management</strong><span>Operational Risk Portal</span></div></div>
-        <div className="envTag">DEVELOPMENT FOUNDATION</div>
+        <div className="envTag">DEVELOPMENT PROTOTYPE</div>
       </header>
 
       <section className="welcome">
@@ -23,12 +23,12 @@ export default function Home() {
         </div>
         <div className="welcomePanel">
           <span className="panelLabel">SYSTEM BUILD</span>
-          <strong>Foundation started</strong>
-          <p>Core application structure and database model are being established. Operational modules will be enabled incrementally.</p>
+          <strong>Collection prototype available</strong>
+          <p>Enter monthly HO KRI values, assess them against appetite and tolerance, and prepare a consolidated PDF report.</p>
         </div>
       </section>
 
-      <section className="quickAction"><div><strong>Need a KRI report?</strong><span>Upload a dataset and generate a PDF with automatic RAG assessment.</span></div><a href="/kri-report">Open KRI Report Generator →</a></section>
+      <section className="quickAction"><div><strong>Need a KRI report?</strong><span>Upload a dataset and generate a PDF with automatic RAG assessment.</span></div><a href="/kri-workspace">Open Monthly KRI Workspace →</a></section>
 
       <section className="stats" aria-label="System overview">
         <div className="stat"><span>USER GROUPS</span><strong>03</strong><small>Departments · Risk · Management</small></div>
