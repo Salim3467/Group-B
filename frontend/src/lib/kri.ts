@@ -106,7 +106,9 @@ export function normalizeDataset(buffer: Buffer, filename: string): KriRow[] {
     if (direction !== "HIGHER" && direction !== "LOWER") throw new Error("Direction must be HIGHER or LOWER (data row " + (index + 1) + ").");
     if (direction === "HIGHER" && green >= red) throw new Error("For HIGHER indicators, Green Limit must be lower than Red Threshold (data row " + (index + 1) + ").");
     if (direction === "LOWER" && green <= red) throw new Error("For LOWER indicators, Green Limit must be higher than Red Threshold (data row " + (index + 1) + ").");
-    const status = direction === "HIGHER" ? (actual <= green ? "GREEN" : actual >= red ? "RED" : "AMBER") : (actual >= green ? "GREEN" : actual <= red ? "RED" : "AMBER");
+    const status = kri.toLowerCase().includes("employee turnover")
+      ? (actual < green ? "GREEN" : actual === green ? "THRESHOLD GAP" : actual <= red ? "AMBER" : "RED")
+      : direction === "HIGHER" ? (actual <= green ? "GREEN" : actual >= red ? "RED" : "AMBER") : (actual >= green ? "GREEN" : actual <= red ? "RED" : "AMBER");
     return { KRI: kri, Department: department, Period: period, Actual: actual, Green_Limit: green, Red_From: red, Direction: direction, RAG_Status: status };
   });
 }
