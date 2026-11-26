@@ -11,9 +11,9 @@ export async function POST(request: NextRequest) {
     const file = form.get("file");
     if (!(file instanceof File)) return NextResponse.json({ detail: "Select a CSV or Excel file." }, { status: 400 });
     const filename = file.name.toLowerCase();
-    if (!/\.(csv|xlsx|xls)$/.test(filename)) return NextResponse.json({ detail: "Upload a CSV or Excel file (.csv, .xlsx, .xls)." }, { status: 400 });
+    if (!/\.(csv|xlsx)$/.test(filename)) return NextResponse.json({ detail: "Upload a CSV or Excel file (.csv, .xlsx, .xls)." }, { status: 400 });
     if (file.size > 10 * 1024 * 1024) return NextResponse.json({ detail: "File size must not exceed 10 MB." }, { status: 413 });
-    const rows = normalizeDataset(Buffer.from(await file.arrayBuffer()), filename);
+    const rows = await normalizeDataset(Buffer.from(await file.arrayBuffer()), filename);
     const counts = { GREEN: 0, AMBER: 0, RED: 0 };
     rows.forEach(row => counts[row.RAG_Status as keyof typeof counts]++);
     const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 34, bufferPages: true, info: { Title: "Key Risk Indicator Report", Author: "KRI Management System" } });
