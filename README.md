@@ -1,75 +1,53 @@
 # KRI Management System
 
-An online Key Risk Indicator collection, review and reporting portal for Head Office departments, Risk Management and Senior Management.
+A lightweight, browser-based Key Risk Indicator (KRI) prototype built with **Node.js and Next.js**.
 
-## Requirements baseline
+## Minimal setup
 
-- [Original AI-Enabled KRI Framework](./AI_Enabled_KRI_Framework%20(1).md)
-- [System Architecture and Phase 1 Plan](./docs/KRI_SYSTEM_ARCHITECTURE_AND_PHASE1.md)
+Requirements: Node.js 20.9 or later (Node.js 22 LTS recommended).
 
-The framework's target workflow is: automated KRI request → department submission → validation and capture → approved threshold assessment → RAG dashboard → AI-assisted commentary → escalation and RCA/CAP tracking → future ORMSS integration.
+```bash
+git clone https://github.com/Salim3467/Group-B.git
+cd Group-B/frontend
+npm install
+npm run dev
+```
 
-## Current repository status
+Open **http://localhost:3000** in your browser.
 
-The repository currently contains the initial application foundation:
-- Next.js frontend shell
-- FastAPI backend
-- PostgreSQL connection and initial SQLAlchemy data entities
-- Docker Compose development environment
-- Environment-variable template
+For a production build:
 
-This is **not yet a complete or production-ready system**. Authentication, operational APIs, submission workflows, email scheduling, threshold/RAG logic, AI extraction, management reports and ORMSS integration remain to be implemented and tested.
+```bash
+npm run build
+npm start
+```
 
-## KRI PDF report generator (first working module)
+## Architecture
 
-The application includes a dataset upload page at `/kri-report` and API endpoints:
-- `GET /kri/template` downloads a sample CSV.
-- `POST /kri/inspect` detects the header row and maps common departmental column-name variations, returning a preview of the detected mapping.
-- `POST /kri/report` accepts a CSV or Excel file and returns a PDF report.
+- One Node.js / Next.js application serves the browser interface and API routes.
+- No Docker, Python, FastAPI, PostgreSQL, or separate database is required.
+- CSV and Excel files are parsed in memory.
+- KRI inspection, column recognition, risk classification and PDF generation run in Node.js API routes.
+- The monthly workspace saves its prototype entries in the current browser's local storage only.
+- Uploaded datasets are not written to disk or retained by the server.
 
-The mapper recognises common alternatives such as `Indicator Name` or `Risk Metric` for KRI, `Unit` or `Division` for Department, `Reporting Month` for Period, `Actual Value` or `Result` for Actual, and `Green Threshold` / `Red Threshold` for limits. It checks the first 10 rows to locate the header row. Ambiguous duplicate mappings and missing required fields are reported rather than guessed.
+## KRI PDF report generator
 
-Canonical fields are `KRI`, `Department`, `Period`, `Actual`, `Green_Limit`, and `Red_From`. Optional `Direction` is `HIGHER` (default) or `LOWER`. For HIGHER, values at/below Green_Limit are Green and at/above Red_From are Red. For LOWER, values at/above Green_Limit are Green and at/below Red_From are Red. Values between the limits are Amber. Uploads are processed in memory and not saved.
+Open `/kri-report`, upload a CSV or Excel workbook, review the automatically detected column mapping, and generate a PDF.
 
-## Run the development foundation
+API routes:
+- `GET /api/kri/template` — sample CSV template.
+- `POST /api/kri/inspect` — detects the heading row and recognised fields.
+- `POST /api/kri/report` — validates the data and returns a PDF.
 
-1. Install Docker Desktop.
-2. Clone this repository.
-3. Copy .env.example to .env.
-4. Change the local database password in .env consistently in POSTGRES_PASSWORD and DATABASE_URL.
-5. Start the services:
+Required fields: KRI, Department, Period, Actual, Green Limit and Red Threshold. Common alternatives such as Indicator, Risk Metric, Unit, Division, Reporting Month, Actual Value, Result, Green Threshold and Red From are recognised. Optional Direction defaults to HIGHER; supported values are HIGHER and LOWER.
 
-   ```bash
-   docker compose up --build
-   ```
+For HIGHER indicators, values at or below Green Limit are Green, values at or above Red Threshold are Red, and values between are Amber. For LOWER indicators, the reverse applies. Thresholds are used exactly as supplied and must be confirmed against the bank-approved KRI methodology.
 
-6. Open:
-   - Frontend: http://localhost:3000
-   - API health: http://localhost:8000/health
-   - API readiness: http://localhost:8000/ready
-   - API documentation: http://localhost:8000/docs
+Limits: 10 MB upload and 5,000 data rows. Supported formats: CSV, XLSX and XLS.
 
-To stop the services, run docker compose down. To also remove the local development database volume, run docker compose down -v (this permanently deletes local database data).
+## Important limitations
 
-## Development and security notes
+This is a development prototype, not a production bank system. There is no central database, authentication, user/department access control, approval workflow, audit trail, central historical record or automated reminder service. Browser local storage is specific to one browser profile and device and can be cleared by the user. Do not enter confidential or live bank data.
 
-- Use synthetic test data only during development.
-- Do not commit .env, credentials, API keys, bank data or customer information.
-- Do not expose the development services publicly.
-- The current schema bootstrap uses SQLAlchemy create_all for development only. Production must use versioned database migrations.
-- Production deployment requires bank IT/security approval, approved hosting and data-residency arrangements, HTTPS, managed secrets, access controls, private file storage, backups and security testing.
-
-## Planned end-to-end delivery
-
-1. Authentication, user roles and department-level authorization.
-2. Department, KRI inventory and assignment administration.
-3. Monthly reporting periods and task generation.
-4. Submission forms, validation, attachments and version history.
-5. Department Head and Risk Management review workflow.
-6. Scheduled reminders, escalation and notification logs.
-7. Operational dashboard, exports and management views.
-8. Approved threshold configuration and deterministic RAG assessment.
-9. RCA/CAP workflow and AI-assisted extraction/commentary.
-10. ORMSS integration and unified Branch + Head Office reporting.
-
-See the architecture document for the detailed functional requirements and acceptance checklist.
+Before any production use, the bank's IT/security teams must approve hosting, access controls, data classification, retention, logging, backups, and security testing. A database can be deliberately added later only if central multi-user persistence becomes a confirmed requirement.
