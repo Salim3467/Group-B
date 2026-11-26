@@ -2,7 +2,7 @@
 
 import { ChangeEvent, useState } from "react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = "";
 
 type Inspection = {
   file_name: string;
@@ -34,7 +34,7 @@ export default function KriReportPage() {
     try {
       const body = new FormData();
       body.append("file", selected);
-      const response = await fetch(`${API_URL}/kri/inspect`, { method: "POST", body });
+      const response = await fetch(`${API_URL}/api/kri/inspect`, { method: "POST", body });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.detail || "Could not inspect this dataset.");
       setInspection(payload as Inspection);
@@ -54,7 +54,7 @@ export default function KriReportPage() {
     try {
       const body = new FormData();
       body.append("file", file);
-      const response = await fetch(`${API_URL}/kri/report`, { method: "POST", body });
+      const response = await fetch(`${API_URL}/api/kri/report`, { method: "POST", body });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
         throw new Error(payload.detail || "Unable to generate the report.");
@@ -94,7 +94,7 @@ export default function KriReportPage() {
       <section className="uploadCard">
         <div className="uploadHeading">
           <div><span className="stepTag">STEP 1</span><h2>Upload your dataset</h2></div>
-          <a className="templateLink" href={`${API_URL}/kri/template`}>Download sample CSV template ↓</a>
+          <a className="templateLink" href={`${API_URL}/api/kri/template`}>Download sample CSV template ↓</a>
         </div>
         <label className="dropZone" htmlFor="dataset">
           <span className="uploadIcon">↑</span>
