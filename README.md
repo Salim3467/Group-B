@@ -1,53 +1,38 @@
-# KRI Management System
+# Group B — KRI Monitoring System
 
-A lightweight, browser-based Key Risk Indicator (KRI) prototype built with **Node.js and Next.js**.
+This repository contains the initial process requirements and department KRI templates for a prototype that will collect KRIs, compare reported values with approved risk appetite/tolerance thresholds, classify results as Green/Amber/Red, and prepare analytical PDF reports for Operational Risk Management Department (ORMD).
 
-## Minimal setup
+## Source material
 
-Requirements: Node.js 20.9 or later (Node.js 22 LTS recommended).
+- [Process flow](Process-Flow.md)
+- [IT monthly KRI template](IT.csv)
+- [Digital Banking monthly KRI template](Digi.csv)
+- [HR quarterly KRI template](HR.csv)
 
-```bash
-git clone https://github.com/Salim3467/Group-B.git
-cd Group-B/frontend
-npm install
-npm run dev
-```
+## Collection schedule in the supplied process note
 
-Open **http://localhost:3000** in your browser.
+- IT and Digital Banking: request on the first day of each Nepali month at 10:00 AM.
+- Follow-up: after every 3 working days when required information has not been received.
+- Monthly submission deadline: within 13 working days of the month.
+- HR: quarterly collection; request on the first day of the quarter-end month at 10:00 AM, reminders every 3 days, and submission within 13 working days of the succeeding month after quarter-end.
 
-For a production build:
+## Initial workflow
 
-```bash
-npm run build
-npm start
-```
+1. Issue KRI requests to the departments using the email routing in the templates.
+2. Track submissions, reminders, and deadlines.
+3. Validate submitted KRI values.
+4. Compare values against approved thresholds and show Green/Amber/Red status.
+5. Produce an analytical PDF report and escalate exceptions to ORMD.
 
-## Architecture
+## Items requiring confirmation before automated classification
 
-- One Node.js / Next.js application serves the browser interface and API routes.
-- No Docker, Python, FastAPI, PostgreSQL, or separate database is required.
-- CSV and Excel files are parsed in memory.
-- KRI inspection, column recognition, risk classification and PDF generation run in Node.js API routes.
-- The monthly workspace saves its prototype entries in the current browser's local storage only.
-- Uploaded datasets are not written to disk or retained by the server.
+- Approved Green/Amber/Red thresholds for the IT and Digital Banking downtime KRIs are not present in the supplied templates.
+- The HR sheet contains formulas and a turnover classification, but the intended calculation and threshold approval should be confirmed before implementation.
+- Escalation triggers and the final PDF report layout have not yet been specified.
 
-## KRI PDF report generator
+## ORMD escalation contacts recorded in the process note
 
-Open `/kri-report`, upload a CSV or Excel workbook, review the automatically detected column mapping, and generate a PDF.
+- nitu.pathak@nabilbak.com
+- nabin.lohani@nabilbank.com
 
-API routes:
-- `GET /api/kri/template` — sample CSV template.
-- `POST /api/kri/inspect` — detects the heading row and recognised fields.
-- `POST /api/kri/report` — validates the data and returns a PDF.
-
-Required fields: KRI, Department, Period, Actual, Green Limit and Red Threshold. Common alternatives such as Indicator, Risk Metric, Unit, Division, Reporting Month, Actual Value, Result, Green Threshold and Red From are recognised. Optional Direction defaults to HIGHER; supported values are HIGHER and LOWER.
-
-For HIGHER indicators, values at or below Green Limit are Green, values at or above Red Threshold are Red, and values between are Amber. For LOWER indicators, the reverse applies. Thresholds are used exactly as supplied and must be confirmed against the bank-approved KRI methodology.
-
-Limits: 10 MB upload and 5,000 data rows. Supported formats: CSV and XLSX.
-
-## Important limitations
-
-This is a development prototype, not a production bank system. There is no central database, authentication, user/department access control, approval workflow, audit trail, central historical record or automated reminder service. Browser local storage is specific to one browser profile and device and can be cleared by the user. Do not enter confidential or live bank data.
-
-Before any production use, the bank's IT/security teams must approve hosting, access controls, data classification, retention, logging, backups, and security testing. A database can be deliberately added later only if central multi-user persistence becomes a confirmed requirement.
+**Data note:** CSV files are worksheet-level conversions of the supplied Excel workbook. Formula text is retained where present. No missing thresholds or formula logic have been inferred or silently changed.
