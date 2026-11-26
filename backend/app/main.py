@@ -5,6 +5,7 @@ from sqlalchemy import text
 from .config import settings
 from .database import Base, engine
 from . import models  # noqa: F401 - registers SQLAlchemy models
+from .kri_report import router as kri_report_router
 
 
 app = FastAPI(
@@ -12,6 +13,8 @@ app = FastAPI(
     version="0.1.0",
     description="API foundation for the bank's KRI collection, review and reporting portal.",
 )
+
+app.include_router(kri_report_router)
 
 app.add_middleware(
     CORSMiddleware,
