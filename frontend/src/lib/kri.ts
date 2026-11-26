@@ -1,4 +1,5 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { parse as parseCsv } from "csv-parse/sync";
 
 export const REQUIRED = ["KRI", "Department", "Period", "Actual", "Green_Limit", "Red_From"] as const;
 export type Canonical = typeof REQUIRED[number] | "Direction";
@@ -20,11 +21,35 @@ for (const [key, values] of Object.entries(aliases) as [Canonical, string[]][]) 
 export function normalizeHeader(value: unknown) {
   return String(value ?? "").trim().toLowerCase().replace(/%/g, " percent ").replace(/[^a-z0-9]+/g, " ").trim();
 }
-function parseWorkbook(buffer: Buffer, filename: string) {
-  const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  if (!sheet) throw new Error("The workbook does not contain a worksheet.");
-  const matrix = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, defval: "" });
+function cellText(value: ExcelJS.CellValue | undefined): string {
+  if (value === null || value === undefined) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === "object") {
+    if ("text" in value && typeof value.text === "string") return value.text;
+    if ("result" in value) return String(value.result ?? "");
+    if ("richText" in value && Array.isArray(value.richText)) return value.richText.map(part => part.text).join("");
+  }
+  return String(value);
+}
+async function parseWorkbook(buffer: Buffer, filename: string) {
+  let matrix: string[][];
+  if (filename.endsWith(".csv")) {
+    matrix = parseCsv(buffer, { bom: true, skip_empty_lines: true, relax_column_count: true }) as string[][];
+    matrix = matrix.map(row => row.map(cell => String(cell ?? "")));
+  } else if (filename.endsWith(".xlsx")) {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer as any);
+    const sheet = workbook.worksheets[0];
+    if (!sheet) throw new Error("The workbook does not contain a worksheet.");
+    matrix = [];
+    sheet.eachRow({ includeEmpty: false }, row => {
+      const values: string[] = [];
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => { values[colNumber - 1] = cellText(cell.value); });
+      matrix.push(values.map(value => value ?? ""));
+    });
+  } else {
+    throw new Error("Legacy .xls files are not supported. Save the workbook as .xlsx or CSV and upload it again.");
+  }
   if (!matrix.length) throw new Error("The uploaded dataset is empty.");
   let headerIndex = -1, bestScore = 0;
   matrix.slice(0, 10).forEach((row, index) => {
