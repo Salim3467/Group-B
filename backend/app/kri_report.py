@@ -128,6 +128,23 @@ async def create_kri_report(file: UploadFile = File(...)):
         ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
     ]))
     story.extend([summary_table, Spacer(1, 7 * mm)])
+
+    # Department-level exposure summary for management review.
+    dept = data.groupby("Department")["RAG_Status"].value_counts().unstack(fill_value=0)
+    dept_rows = [["Department", "Total", "Green", "Amber", "Red"]]
+    for name, values in dept.iterrows():
+        dept_rows.append([str(name), str(int(values.sum())), str(int(values.get("GREEN", 0))), str(int(values.get("AMBER", 0))), str(int(values.get("RED", 0)))])
+    story.append(Paragraph("Department-wise risk position", styles["Heading2"]))
+    dept_table = Table(dept_rows, repeatRows=1, colWidths=[75 * mm, 25 * mm, 25 * mm, 25 * mm, 25 * mm])
+    dept_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#12344a")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#d7e0e5")),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    story.extend([dept_table, Spacer(1, 6 * mm)])
     headers = ["KRI", "Department", "Period", "Actual", "Green limit", "Red from", "Direction", "RAG status"]
     rows = [headers]
     for _, row in data.iterrows():
@@ -152,8 +169,25 @@ async def create_kri_report(file: UploadFile = File(...)):
         if index % 2 == 0:
             detail_style.append(("BACKGROUND", (0, index), (6, index), colors.HexColor("#f7f9fa")))
     detail_table.setStyle(TableStyle(detail_style))
+    story.extend([detail_table, Spacer(1, 5 * mm)])
+    story.append(Paragraph("Key risk observations", styles["Heading2"]))
+    exceptions = data[data["RAG_Status"].isin(["RED", "AMBER"])].copy()
+    if exceptions.empty:
+        story.append(Paragraph("No Amber or Red indicators were identified in the submitted dataset for this reporting period.", styles["Normal"]))
+    else:
+        for _, item in exceptions.sort_values(["RAG_Status", "Department"]).iterrows():
+            status = str(item["RAG_Status"])
+            if str(item["Direction"]).upper() == "HIGHER":
+                gap = float(item["Actual"]) - float(item["Green_Limit"])
+                detail = f"Actual is {abs(gap):,.2f} above the appetite limit"
+            else:
+                gap = float(item["Green_Limit"]) - float(item["Actual"])
+                detail = f"Actual is {abs(gap):,.2f} below the appetite limit"
+            line = f"<b>{status}: {item['KRI']}</b> ({item['Department']}) — actual {float(item['Actual']):,.2f}; {detail}. Tolerance boundary: {float(item['Red_From']):,.2f}."
+            story.append(Paragraph(line, styles["BodyText"]))
+            story.append(Spacer(1, 2 * mm))
     story.extend([
-        detail_table, Spacer(1, 5 * mm),
+        Spacer(1, 3 * mm),
         Paragraph(
             "Assessment method: HIGHER means larger values indicate greater risk; LOWER means smaller values indicate greater risk. "
             "For HIGHER, Green is at or below Green_Limit, Red is at or above Red_From, and values between are Amber. "
