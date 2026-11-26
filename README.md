@@ -22,11 +22,14 @@ This is **not yet a complete or production-ready system**. Authentication, opera
 
 ## KRI PDF report generator (first working module)
 
-The application now includes a dataset upload page at `/kri-report` and API endpoints:
+The application includes a dataset upload page at `/kri-report` and API endpoints:
 - `GET /kri/template` downloads a sample CSV.
+- `POST /kri/inspect` detects the header row and maps common departmental column-name variations, returning a preview of the detected mapping.
 - `POST /kri/report` accepts a CSV or Excel file and returns a PDF report.
 
-Required columns: `KRI`, `Department`, `Period`, `Actual`, `Green_Limit`, `Red_From`. Optional `Direction` is `HIGHER` (default) or `LOWER`. For HIGHER, values at/below Green_Limit are Green and at/above Red_From are Red. For LOWER, values at/above Green_Limit are Green and at/below Red_From are Red. Values between the limits are Amber. This first module processes the file in memory and does not save uploaded data.
+The mapper recognises common alternatives such as `Indicator Name` or `Risk Metric` for KRI, `Unit` or `Division` for Department, `Reporting Month` for Period, `Actual Value` or `Result` for Actual, and `Green Threshold` / `Red Threshold` for limits. It checks the first 10 rows to locate the header row. Ambiguous duplicate mappings and missing required fields are reported rather than guessed.
+
+Canonical fields are `KRI`, `Department`, `Period`, `Actual`, `Green_Limit`, and `Red_From`. Optional `Direction` is `HIGHER` (default) or `LOWER`. For HIGHER, values at/below Green_Limit are Green and at/above Red_From are Red. For LOWER, values at/above Green_Limit are Green and at/below Red_From are Red. Values between the limits are Amber. Uploads are processed in memory and not saved.
 
 ## Run the development foundation
 
