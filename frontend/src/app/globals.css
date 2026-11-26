@@ -40,3 +40,34 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 10px
 .quickAction { display: flex; align-items: center; justify-content: space-between; gap: 18px; background: #edf6f5; border: 1px solid #d9e8e7; border-radius: 12px; padding: 18px 20px; margin: 0 0 22px; }
 .quickAction strong, .quickAction span { display: block; }.quickAction strong { color: var(--navy); font-size: 14px; }.quickAction span { color: var(--muted); font-size: 11px; margin-top: 5px; }.quickAction a { color: var(--teal); text-decoration: none; font-size: 12px; font-weight: 700; white-space: nowrap; }
 @media (max-width: 650px) { .quickAction { align-items: flex-start; flex-direction: column; } }
+
+
+/* Monthly KRI collection workspace */
+.brandLink,.backLink { text-decoration:none; color:inherit; }
+.reportShell { max-width:1100px; }
+.reportIntro { padding:42px 0 25px; }
+.reportIntro h1 { font-size:clamp(30px,4vw,42px); }
+.reportIntro>p:last-child { color:var(--muted); line-height:1.6; max-width:720px; }
+.uploadCard,.noteCard { background:#fff; border:1px solid var(--line); border-radius:14px; padding:24px; margin-bottom:18px; }
+.uploadHeading { display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:20px; }
+.stepTag { display:block; color:var(--teal); font-size:10px; font-weight:700; letter-spacing:1px; margin-bottom:7px; }
+.workspaceFilters,.kriEntryFields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.workspaceFilters label,.kriEntryFields label,.noteField { display:flex; flex-direction:column; gap:7px; color:#526574; font-size:11px; font-weight:700; }
+.workspaceFilters input,.workspaceFilters select,.kriEntryFields input,.kriEntryFields select,.noteField textarea { width:100%; border:1px solid #d8e1e7; border-radius:8px; padding:10px 11px; color:var(--ink); background:#fff; font:13px Arial,sans-serif; min-height:39px; }
+.kriSummary { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:20px 0; }
+.kriSummary>div { background:#f6f9fa; border:1px solid var(--line); border-radius:9px; padding:12px; }
+.kriSummary small,.kriSummary strong { display:block; }.kriSummary small { color:var(--muted); font-size:10px; }.kriSummary strong { font-size:23px; margin-top:6px; color:var(--navy); }
+.greenText { color:#18804a!important; }.amberText { color:#a36a08!important; }.redText { color:#b33131!important; }
+.kriList { display:grid; gap:13px; margin:18px 0 22px; }
+.kriEntry { border:1px solid var(--line); border-radius:11px; padding:17px; }
+.kriEntryHead { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:15px; }
+.kriCode { color:var(--teal); font-size:10px; font-weight:700; letter-spacing:.3px; }
+.kriEntry h3 { margin:6px 0 0; font-size:15px; color:var(--navy); }
+.ragPill { border-radius:20px; padding:6px 9px; font-size:9px; font-weight:700; white-space:nowrap; background:#edf1f3; color:#667887; }
+.ragPill.green { background:#e5f4ea; color:#176e3d; }.ragPill.amber { background:#fff3d9; color:#91610b; }.ragPill.red { background:#fbe8e8; color:#a52d2d; }
+.noteField { margin-top:13px; }.noteField textarea { resize:vertical; font-weight:400; }
+.thresholdHint { margin:10px 0 0; color:var(--muted); font-size:10px; }
+.generateButton { width:100%; border:0; border-radius:9px; padding:14px; background:var(--navy); color:white; font-weight:700; cursor:pointer; font-size:13px; }.generateButton:disabled { opacity:.55; cursor:not-allowed; }
+.feedback { font-size:12px; margin:14px 0 0; }.errorText { color:#b33131; }.successText { color:#176e3d; }
+.noteCard { background:#f8fafb; }.noteCard strong { color:var(--navy); font-size:13px; }.noteCard p { color:var(--muted); font-size:11px; line-height:1.65; margin-bottom:0; }
+@media(max-width:650px) { .workspaceFilters,.kriEntryFields { grid-template-columns:1fr; }.kriSummary { grid-template-columns:repeat(2,1fr); }.uploadCard,.noteCard { padding:17px; }.uploadHeading { align-items:flex-start; flex-direction:column; } }
