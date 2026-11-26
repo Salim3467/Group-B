@@ -57,4 +57,4 @@ The KRI inventory uses the indicators represented in these templates. IT and Dig
 - Browser-local prototype data for workflow demonstration.
 - CSV/XLSX inspection and PDF generation APIs are available under `frontend/src/app/api/kri`.
 - PDF generation uses the existing Node.js PDFKit implementation.
-- See [system architecture and phase plan](docs/KRI_SYSTEM_ARCHITECTURE_AND_PHASE1.md).
+- See the [senior management demo guide](docs/SENIOR_MANAGEMENT_DEMO_GUIDE.md) and [system architecture / production roadmap](docs/KRI_SYSTEM_ARCHITECTURE_AND_PHASE1.md).
