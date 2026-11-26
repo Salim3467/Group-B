@@ -33,3 +33,20 @@
 .noteCard strong { font-size: 12px; color: #805b20; }
 .noteCard p { color: #75664d; font-size: 11px; line-height: 1.65; margin: 7px 0 0; }
 @media (max-width: 650px) { .uploadCard { padding: 18px; } .uploadHeading { align-items: flex-start; flex-direction: column; } .thresholdInfo { grid-template-columns: 1fr; } }
+
+.inspectionPanel { border: 1px solid #dce8e8; background: #fbfdfd; border-radius: 11px; padding: 17px; margin-top: 18px; }
+.inspectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.inspectionHeader > strong { font-size: 13px; color: var(--navy); }
+.readyTag, .warningTag { border-radius: 20px; padding: 5px 9px; font-size: 10px; font-weight: 700; }
+.readyTag { color: #176e48; background: #e6f5ec; }.warningTag { color: #936117; background: #fff2d9; }
+.inspectionStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin: 14px 0; }
+.inspectionStats > div { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.inspectionStats strong, .inspectionStats span { display: block; }.inspectionStats strong { color: var(--navy); font-size: 19px; }.inspectionStats span { color: var(--muted); font-size: 10px; margin-top: 3px; }
+.mappingTitle { color: var(--navy); font-size: 11px; font-weight: 700; margin: 14px 0 8px; }
+.mappingGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+.mappingItem { display: flex; justify-content: space-between; gap: 10px; background: white; border: 1px solid var(--line); border-radius: 7px; padding: 8px 9px; min-width: 0; }
+.mappingItem span { color: var(--muted); font-size: 10px; }.mappingItem strong { color: var(--navy); font-size: 10px; text-align: right; overflow-wrap: anywhere; }
+.mappingWarning { color: #9a4d12; background: #fff5e7; border-radius: 7px; padding: 9px; font-size: 10px; line-height: 1.5; }
+.mappingHint { color: var(--muted); font-size: 10px; margin: 10px 0 0; }
+.formatBox p { align-items: flex-start; }
+@media (max-width: 650px) { .mappingGrid { grid-template-columns: 1fr; } .inspectionStats { grid-template-columns: 1fr 1fr 1fr; } .inspectionHeader { align-items: flex-start; flex-direction: column; } }
