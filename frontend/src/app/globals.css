@@ -114,3 +114,5 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 10px
 .uploadResult.warning{background:#fff6e6;color:#8a641e}
 .uploadFeedback{font-size:10px;line-height:1.5;margin:0;color:#526675}
 @media(max-width:850px){.dashboardUpload{grid-template-columns:1fr;gap:15px}}
+
+.topUploadButton{border:0;border-radius:7px;background:#176a70;color:#fff;padding:10px 13px;font-size:10px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 5px rgba(20,84,90,.12)}.topUploadButton:hover{background:#12565c}.topUploadButton:focus-visible{outline:3px solid #9bd5cd;outline-offset:2px}
