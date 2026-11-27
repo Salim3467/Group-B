@@ -38,7 +38,7 @@ export default function Home() {
   return (
     <main className="appShell">
       <aside className="sideNav">
-        <a className="sideBrand" href="/"><span className="sideLogo">K</span><span><b>KRI Central</b><small>Operational Risk Portal</small></span></a>
+        <a className="sideBrand" href="/"><span className="sideLogo">N</span><span><b>NABIL</b><small>Operational Risk Portal</small></span></a>
         <div className="navCaption">WORKSPACE</div>
         <a className="navItem active" href="/">▦ <span>Overview</span></a>
         <a className="navItem" href="/kri-workspace">▤ <span>Monthly collection</span></a>

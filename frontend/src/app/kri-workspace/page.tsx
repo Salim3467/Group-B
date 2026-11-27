@@ -191,7 +191,7 @@ export default function KriWorkspace() {
   return (
     <main className="kriApp">
       <aside className="kriSidebar">
-        <a className="kriBrand" href="/"><span className="kriLogo">K</span><span><b>KRI CENTRAL</b><small>Operational Risk Portal</small></span></a>
+        <a className="kriBrand" href="/"><span className="kriLogo">N</span><span><b>NABIL</b><small>Operational Risk Portal</small></span></a>
         <p className="navLabel">WORKSPACE</p>
         {["Overview","Collection","Review queue","KRI inventory","Reports","Activity log"].map(t =>
           <button key={t} className={tab===t?"navButton active":"navButton"} onClick={()=>{setTab(t);setSelectedId("");}}>{({Overview:"▦",Collection:"▤","Review queue":"✓","KRI inventory":"◫",Reports:"▧","Activity log":"⌁"} as Record<string,string>)[t]} <span>{t}</span></button>
