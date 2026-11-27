@@ -116,6 +116,7 @@ export default function Home() {
         <div className="navCaption">WORKSPACE</div>
         <a className="navItem active" href="/">▦ <span>Overview</span></a>
         <a className="navItem" href="/kri-workspace">▤ <span>Monthly collection</span></a>
+        <a className="navItem" href="/department-portal">＋ <span>Department portal</span></a>
         <a className="navItem" href="/kri-report">▧ <span>Report generator</span></a>
         <div className="navCaption">MANAGEMENT</div>
         <a className="navItem" href="/kri-workspace">◫ <span>KRI inventory</span></a>
