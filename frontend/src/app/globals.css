@@ -254,3 +254,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .sideNav{background:linear-gradient(100deg,#e2f1e4,#d8ebdc)}
   .sideBrand{border-bottom:0}
 }
+
+/* NABIL Bank wordmark in the dashboard sidebar */
+.sideBrand{gap:10px}
+.sideBrandLogo{display:block;width:146px;height:auto;max-height:42px;object-fit:contain;border-radius:5px}
+.sideBrand>span:last-child small{color:#54745e;font-size:10px;letter-spacing:.2px}
+@media(max-width:720px){.sideBrandLogo{width:138px;max-height:36px}}
