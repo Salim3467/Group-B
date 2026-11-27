@@ -32,7 +32,7 @@ const initialMetrics: Metric[] = [
   { id: "HR-01", department: "Human Resources", name: "Employee turnover", unit: "%", appetite: 10, tolerance: 12, direction: "HIGHER" as const, approved: false, source: "Source template classification – confirmation pending" }
 ];
 
-const departments = ["Information Technology", "Digital Banking", "Human Resources"];
+const departments = ["Information Technology", "Digital Banking", "Human Resources", "SME & MF Lending", "Finance Department", "Central Trade Operation", "Risk Department"];
 const today = () => { const d = new Date(); return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-"); };
 const fmt = (value: string) => value ? new Date(value + "T00:00:00").toLocaleDateString("en-GB") : "—";
 const blankValue = (): Value => ({ actual: "", occurred: "", location: "", remarks: "" });
@@ -255,16 +255,20 @@ export default function KriWorkspace() {
               <div className="panelHead"><div><small>DEPARTMENT WORKSPACE</small><h3>Select your department to enter KRI data</h3></div><span className="countBadge">{departments.length} departments</span></div>
               <p className="mutedText">Choose the department you represent. The corresponding KRI entry form will open for the selected reporting period. Existing entries for the same period will be reopened.</p>
               <div className="departmentCards">
-                {departments.map((department, index) => {
+                {departments.map((department) => {
                   const record = submissions.find(s => s.department === department && s.period === period);
                   const count = metrics.filter(m => m.department === department).length;
+                  const icon = department === "Information Technology" ? "IT" : department === "Digital Banking" ? "DB" : department === "Human Resources" ? "HR" : department === "SME & MF Lending" ? "SME" : department === "Finance Department" ? "FIN" : department === "Central Trade Operation" ? "CTO" : "RISK";
+                  const templateReady = count > 0;
                   const frequency = department === "Human Resources" ? "Quarterly" : "Monthly";
                   return <article className="departmentCard" key={department}>
-                    <div className="departmentCardIcon">{["IT","DB","HR"][index]}</div>
-                    <div className="departmentCardBody"><h3>{department}</h3><p>{count} KRI fields · {frequency} reporting</p>
-                      <span className={record ? `stateTag ${displayStatus(record).toLowerCase()}` : "stateTag"}>{record ? displayStatus(record) : "NOT STARTED"}</span>
+                    <div className="departmentCardIcon">{icon}</div>
+                    <div className="departmentCardBody"><h3>{department}</h3><p>{templateReady ? `${count} KRI fields · ${frequency} reporting` : "KRI template to be provided"}</p>
+                      <span className={record ? `stateTag ${displayStatus(record).toLowerCase()}` : "stateTag"}>{record ? displayStatus(record) : templateReady ? "NOT STARTED" : "TEMPLATE PENDING"}</span>
                     </div>
-                    <button className="primaryBtn" onClick={() => openDepartment(department)}>{record ? "Open entry" : "Enter KRI data"} →</button>
+                    {templateReady
+                      ? <button className="primaryBtn" onClick={() => openDepartment(department)}>{record ? "Open entry" : "Enter KRI data"} →</button>
+                      : <button className="secondaryBtn" disabled>Awaiting template</button>}
                   </article>;
                 })}
               </div>
