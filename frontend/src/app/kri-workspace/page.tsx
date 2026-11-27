@@ -32,7 +32,7 @@ const initialMetrics: Metric[] = [
   { id: "HR-01", department: "Human Resources", name: "Employee turnover", unit: "%", appetite: 10, tolerance: 12, direction: "HIGHER" as const, approved: false, source: "Source template classification – confirmation pending" }
 ];
 
-const departments = ["Information Technology", "Digital Banking", "Human Resources"];
+const departments = ["Information Technology", "Digital Banking", "Human Resources", "SME & MF Lending", "Finance Department", "Central Trade Operation", "Risk Department"];
 const today = () => { const d = new Date(); return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-"); };
 const fmt = (value: string) => value ? new Date(value + "T00:00:00").toLocaleDateString("en-GB") : "—";
 const blankValue = (): Value => ({ actual: "", occurred: "", location: "", remarks: "" });
@@ -125,6 +125,31 @@ export default function KriWorkspace() {
     created.forEach(s => logAction(s.department, "Request issued (simulated)", `KRI request for ${period}; due ${fmt(s.dueDate)}.`));
     setMessage(`Collection cycle created for ${missing.join(", ")}. Email dispatch is simulated in this demonstration.`);
   }
+  function openDepartment(department: string) {
+    const existing = submissions.find(s => s.period === period && s.department === department);
+    if (existing) {
+      setSelectedId(existing.id);
+      setTab("Department entry");
+      setMessage("");
+      return;
+    }
+    const requestDate = new Date(cycleDate + "T00:00:00");
+    const nextMonthStart = new Date(requestDate.getFullYear(), requestDate.getMonth() + 1, 1);
+    const draft: Submission = {
+      id: newId(), department, period,
+      frequency: department === "Human Resources" ? "Quarterly" : "Monthly",
+      dueDate: addWorkingDays(department === "Human Resources" ? nextMonthStart : requestDate, 13),
+      status: "REQUESTED", requestedAt: today(), reminders: 0, lastReminder: "",
+      submittedAt: "", reviewedAt: "", reviewerNote: "",
+      values: Object.fromEntries(metrics.filter(m => m.department === department).map(m => [m.id, blankValue()]))
+    };
+    setSubmissions(old => [...old, draft]);
+    logAction(department, "Department entry opened", `Draft KRI entry created for ${period}.`);
+    setSelectedId(draft.id);
+    setTab("Department entry");
+    setMessage("");
+  }
+
   function sendReminder(s: Submission) {
     setSubmissions(old => old.map(x => x.id === s.id ? { ...x, reminders: x.reminders + 1, lastReminder: today() } : x));
     logAction(s.department, "Reminder issued (simulated)", `Reminder #${s.reminders + 1} for ${s.period} submission.`);
@@ -193,8 +218,8 @@ export default function KriWorkspace() {
       <aside className="kriSidebar">
         <a className="kriBrand" href="/"><span className="kriLogo">N</span><span><b>NABIL</b><small>Operational Risk Portal</small></span></a>
         <p className="navLabel">WORKSPACE</p>
-        {["Overview","Collection","Review queue","KRI inventory","Reports","Activity log"].map(t =>
-          <button key={t} className={tab===t?"navButton active":"navButton"} onClick={()=>{setTab(t);setSelectedId("");}}>{({Overview:"▦",Collection:"▤","Review queue":"✓","KRI inventory":"◫",Reports:"▧","Activity log":"⌁"} as Record<string,string>)[t]} <span>{t}</span></button>
+        {["Overview","Departments","Collection","Review queue","KRI inventory","Reports","Activity log"].map(t =>
+          <button key={t} className={tab===t?"navButton active":"navButton"} onClick={()=>{setTab(t);setSelectedId("");}}>{({Overview:"▦",Departments:"▣",Collection:"▤","Review queue":"✓","KRI inventory":"◫",Reports:"▧","Activity log":"⌁"} as Record<string,string>)[t]} <span>{t}</span></button>
         )}
         <div className="sidebarBottom"><b>ORMD DEMO</b><small>Local prototype · Synthetic data</small><button onClick={resetDemo}>Reset demo data</button></div>
       </aside>
@@ -223,6 +248,31 @@ export default function KriWorkspace() {
               </section>
             </div>
             <section className="panel"><div className="panelHead"><div><small>END-TO-END PROCESS</small><h3>Demonstration sequence</h3></div></div><div className="processSteps">{["Create reporting cycle","Department submits KRI values","ORMD reviews submission","Assess against appetite / tolerance","Generate PDF report"].map((x,i)=><div key={x}><span>{String(i+1).padStart(2,"0")}</span><b>{x}</b></div>)}</div></section>
+          </>}
+
+          {tab === "Departments" && <>
+            <section className="panel">
+              <div className="panelHead"><div><small>DEPARTMENT WORKSPACE</small><h3>Select your department to enter KRI data</h3></div><span className="countBadge">{departments.length} departments</span></div>
+              <p className="mutedText">Choose the department you represent. The corresponding KRI entry form will open for the selected reporting period. Existing entries for the same period will be reopened.</p>
+              <div className="departmentCards">
+                {departments.map((department) => {
+                  const record = submissions.find(s => s.department === department && s.period === period);
+                  const count = metrics.filter(m => m.department === department).length;
+                  const icon = department === "Information Technology" ? "IT" : department === "Digital Banking" ? "DB" : department === "Human Resources" ? "HR" : department === "SME & MF Lending" ? "SME" : department === "Finance Department" ? "FIN" : department === "Central Trade Operation" ? "CTO" : "RISK";
+                  const templateReady = count > 0;
+                  const frequency = department === "Human Resources" ? "Quarterly" : "Monthly";
+                  return <article className="departmentCard" key={department}>
+                    <div className="departmentCardIcon">{icon}</div>
+                    <div className="departmentCardBody"><h3>{department}</h3><p>{templateReady ? `${count} KRI fields · ${frequency} reporting` : "KRI template to be provided"}</p>
+                      <span className={record ? `stateTag ${displayStatus(record).toLowerCase()}` : "stateTag"}>{record ? displayStatus(record) : templateReady ? "NOT STARTED" : "TEMPLATE PENDING"}</span>
+                    </div>
+                    {templateReady
+                      ? <button className="primaryBtn" onClick={() => openDepartment(department)}>{record ? "Open entry" : "Enter KRI data"} →</button>
+                      : <button className="secondaryBtn" disabled>Awaiting template</button>}
+                  </article>;
+                })}
+              </div>
+            </section>
           </>}
 
           {tab === "Collection" && <>
