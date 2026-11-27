@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 74" role="img" aria-labelledby="title">
+<title id="title">NABIL BANK</title>
+<rect width="420" height="74" rx="8" fill="#299e51"/>
+<g fill="#fff" font-family="Arial, Helvetica, sans-serif" font-weight="500" letter-spacing="1">
+<text x="18" y="55" font-size="52">N</text>
+<text x="113" y="55" font-size="52">BIL BANK</text>
+</g>
+<path d="M72 58 L98 7 L124 58 L106 46 L98 29 L90 46 Z" fill="#ef2737"/>
+<path d="M92 57 L98 45 L104 57 Z" fill="#299e51"/>
+<circle cx="406" cy="13" r="9" fill="none" stroke="#fff" stroke-width="2"/>
+<text x="402.8" y="17" fill="#fff" font-family="Arial" font-size="12" font-weight="700">R</text>
+</svg>
