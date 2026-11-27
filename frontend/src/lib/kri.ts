@@ -78,8 +78,8 @@ async function parseWorkbook(buffer: Buffer, filename: string) {
   const missing = REQUIRED.filter(field => !mapping[field]);
   return { headerRow: headerIndex + 1, dataRows: records, mapping, missing, conflicts, filename };
 }
-export function inspectDataset(buffer: Buffer, filename: string) {
-  const parsed = parseWorkbook(buffer, filename);
+export async function inspectDataset(buffer: Buffer, filename: string) {
+  const parsed = await parseWorkbook(buffer, filename);
   return {
     file_name: filename, header_row: parsed.headerRow, data_rows: parsed.dataRows.length,
     detected_columns: Object.entries(parsed.mapping).map(([field, source_column]) => ({ field, source_column })),
@@ -88,8 +88,8 @@ export function inspectDataset(buffer: Buffer, filename: string) {
     sample_rows: parsed.dataRows.slice(0, 3)
   };
 }
-export function normalizeDataset(buffer: Buffer, filename: string): KriRow[] {
-  const parsed = parseWorkbook(buffer, filename);
+export async function normalizeDataset(buffer: Buffer, filename: string): Promise<KriRow[]> {
+  const parsed = await parseWorkbook(buffer, filename);
   if (Object.keys(parsed.conflicts).length) throw new Error("More than one column matches: " + Object.keys(parsed.conflicts).join(", ") + ". Keep one matching column for each field.");
   if (parsed.missing.length) throw new Error("Missing required fields: " + parsed.missing.join(", "));
   if (!parsed.dataRows.length) throw new Error("The uploaded dataset has no data rows.");
