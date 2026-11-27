@@ -219,7 +219,7 @@ export default function KriWorkspace() {
         <a className="kriBrand" href="/"><span className="kriLogo">N</span><span><b>NABIL</b><small>Operational Risk Portal</small></span></a>
         <p className="navLabel">WORKSPACE</p>
         {["Overview","Departments","Collection","Review queue","KRI inventory","Reports","Activity log"].map(t =>
-          <button key={t} className={tab===t?"navButton active":"navButton"} onClick={()=>{setTab(t);setSelectedId("");}}>{({Overview:"▦",Departments:"▣",Collection:"▤","Review queue":"✓","KRI inventory:"◫",Reports:"▧","Activity log":"⌁"} as Record<string,string>)[t]} <span>{t}</span></button>
+          <button key={t} className={tab===t?"navButton active":"navButton"} onClick={()=>{setTab(t);setSelectedId("");}}>{({Overview:"▦",Departments:"▣",Collection:"▤","Review queue":"✓","KRI inventory":"◫",Reports:"▧","Activity log":"⌁"} as Record<string,string>)[t]} <span>{t}</span></button>
         )}
         <div className="sidebarBottom"><b>ORMD DEMO</b><small>Local prototype · Synthetic data</small><button onClick={resetDemo}>Reset demo data</button></div>
       </aside>
