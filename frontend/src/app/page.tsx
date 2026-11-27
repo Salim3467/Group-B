@@ -125,9 +125,9 @@ export default function Home() {
       </aside>
 
       <section className="mainPanel">
-        <header className="dashTop"><div><span className="crumb">KRI MANAGEMENT / OVERVIEW</span><h1>Risk monitoring dashboard</h1><p>Consolidated view of Head Office Key Risk Indicators</p></div><div className="topActions"><button className="topUploadButton" onClick={() => uploadInputRef.current?.click()}>↑ &nbsp; Upload KRI File</button><input ref={uploadInputRef} id="kri-dashboard-file" type="file" accept=".csv,.xlsx" hidden onChange={e => { setUploadFile(e.target.files?.[0] ?? null); setInspection(null); setUploadMessage(""); }} /><span className="periodChip">◷ &nbsp; Reporting period: Nov 2026</span><span className="prototypeChip">SAMPLE DATA</span></div></header>
+        <header className="dashTop"><div><span className="crumb">KRI MANAGEMENT / OVERVIEW</span><h1>Risk Indicator</h1><p>Consolidated view of Head Office Key Risk Indicators</p></div><div className="topActions"><button className="topUploadButton" onClick={() => uploadInputRef.current?.click()}>↑ &nbsp; Upload KRI File</button><input ref={uploadInputRef} id="kri-dashboard-file" type="file" accept=".csv,.xlsx" hidden onChange={e => { setUploadFile(e.target.files?.[0] ?? null); setInspection(null); setUploadMessage(""); }} /><span className="periodChip">◷ &nbsp; Reporting period: Nov 2026</span><span className="prototypeChip">SAMPLE DATA</span></div></header>
 
-        <div className="welcomeStrip"><div><span className="stripEyebrow">MONTHLY OPERATIONAL RISK REVIEW</span><h2>Good morning, Risk Team</h2><p>Monitor submissions, identify exceptions and follow up with departments from one workspace.</p></div><a className="primaryAction" href="/kri-workspace">Open KRI workspace&nbsp; →</a></div>
+        <div className="welcomeStrip"><div><span className="stripEyebrow">MONTHLY OPERATIONAL RISK REVIEW</span><h2>Good Morning Team,</h2><p>Monitor submissions, identify exceptions and follow up with departments from one workspace.</p></div><a className="primaryAction" href="/kri-workspace">Open KRI workspace&nbsp; →</a></div>
 
         <section className="dashboardUpload">
           <div className="dashboardUploadIntro">
