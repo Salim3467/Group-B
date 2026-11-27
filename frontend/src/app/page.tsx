@@ -80,6 +80,30 @@ export default function Home() {
     } finally { setUploadBusy(false); }
   }
 
+  async function downloadAnalyzedExcel() {
+    if (!uploadFile || !inspection?.ready) return;
+    setUploadBusy(true); setUploadMessage("");
+    try {
+      const form = new FormData();
+      form.append("file", uploadFile);
+      const response = await fetch("/api/kri/excel", { method: "POST", body: form });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.detail || "Excel processing failed.");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "KRI_Analyzed_Results.xlsx";
+      document.body.appendChild(link); link.click(); link.remove();
+      URL.revokeObjectURL(url);
+      setUploadMessage("Analysis complete. Your analyzed Excel workbook has been downloaded.");
+    } catch (error) {
+      setUploadMessage(error instanceof Error ? error.message : "Excel processing failed.");
+    } finally { setUploadBusy(false); }
+  }
+
   const filtered = useMemo(() => records.filter((r) =>
     (filter === "All" || r.status === filter) &&
     (r.name + r.department + r.code).toLowerCase().includes(query.toLowerCase())
@@ -116,7 +140,8 @@ export default function Home() {
             {uploadFile && <span className="selectedFileName">{uploadFile.name} · {(uploadFile.size / 1024).toFixed(1)} KB</span>}
             <div className="uploadButtonRow">
               <button className="uploadSecondaryButton" onClick={inspectUpload} disabled={!uploadFile || uploadBusy}>{uploadBusy ? "Checking…" : "Validate file"}</button>
-              <button className="uploadPrimaryButton" onClick={processUpload} disabled={!inspection?.ready || uploadBusy}>{uploadBusy ? "Processing…" : "Process & download report"}</button>
+              <button className="uploadPrimaryButton" onClick={processUpload} disabled={!inspection?.ready || uploadBusy}>{uploadBusy ? "Processing…" : "Download PDF report"}</button>
+              <button className="uploadSecondaryButton" onClick={downloadAnalyzedExcel} disabled={!inspection?.ready || uploadBusy}>{uploadBusy ? "Processing…" : "Download analyzed Excel"}</button>
             </div>
             {inspection && <div className={inspection.ready ? "uploadResult success" : "uploadResult warning"}>
               <b>{inspection.ready ? "File ready for processing" : "File needs correction"}</b>
