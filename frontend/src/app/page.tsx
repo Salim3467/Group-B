@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 type UploadInspection = { file_name: string; data_rows: number; ready: boolean; missing_fields: string[]; detected_columns: { field: string; source_column: string }[] };
 
@@ -36,6 +36,7 @@ export default function Home() {
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
   const [inspection, setInspection] = useState<UploadInspection | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
   async function inspectUpload() {
     if (!uploadFile) { setUploadMessage("Choose a CSV or Excel file first."); return; }
     const extension = uploadFile.name.toLowerCase().split(".").pop();
@@ -100,7 +101,7 @@ export default function Home() {
       </aside>
 
       <section className="mainPanel">
-        <header className="dashTop"><div><span className="crumb">KRI MANAGEMENT / OVERVIEW</span><h1>Risk monitoring dashboard</h1><p>Consolidated view of Head Office Key Risk Indicators</p></div><div className="topActions"><span className="periodChip">◷ &nbsp; Reporting period: Nov 2026</span><span className="prototypeChip">SAMPLE DATA</span></div></header>
+        <header className="dashTop"><div><span className="crumb">KRI MANAGEMENT / OVERVIEW</span><h1>Risk monitoring dashboard</h1><p>Consolidated view of Head Office Key Risk Indicators</p></div><div className="topActions"><button className="topUploadButton" onClick={() => uploadInputRef.current?.click()}>↑ &nbsp; Upload KRI File</button><span className="periodChip">◷ &nbsp; Reporting period: Nov 2026</span><span className="prototypeChip">SAMPLE DATA</span></div></header>
 
         <div className="welcomeStrip"><div><span className="stripEyebrow">MONTHLY OPERATIONAL RISK REVIEW</span><h2>Good morning, Risk Team</h2><p>Monitor submissions, identify exceptions and follow up with departments from one workspace.</p></div><a className="primaryAction" href="/kri-workspace">Open KRI workspace&nbsp; →</a></div>
 
@@ -113,7 +114,7 @@ export default function Home() {
           </div>
           <div className="dashboardUploadControls">
             <label className="uploadFileLabel" htmlFor="kri-dashboard-file">Select data file</label>
-            <input id="kri-dashboard-file" type="file" accept=".csv,.xlsx" onChange={e => { setUploadFile(e.target.files?.[0] ?? null); setInspection(null); setUploadMessage(""); }} />
+            <input ref={uploadInputRef} id="kri-dashboard-file" type="file" accept=".csv,.xlsx" onChange={e => { setUploadFile(e.target.files?.[0] ?? null); setInspection(null); setUploadMessage(""); }} />
             {uploadFile && <span className="selectedFileName">{uploadFile.name} · {(uploadFile.size / 1024).toFixed(1)} KB</span>}
             <div className="uploadButtonRow">
               <button className="uploadSecondaryButton" onClick={inspectUpload} disabled={!uploadFile || uploadBusy}>{uploadBusy ? "Checking…" : "Validate file"}</button>
