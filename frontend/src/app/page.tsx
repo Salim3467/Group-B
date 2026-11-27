@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+type UploadInspection = { file_name: string; data_rows: number; ready: boolean; missing_fields: string[]; detected_columns: { field: string; source_column: string }[] };
+
 const records = [
   { code: "ICT-01", name: "Critical system downtime", department: "Information Technology", actual: "6.2 hrs", status: "Red", owner: "ICT Operations" },
   { code: "OPS-04", name: "Unreconciled transactions", department: "Operations", actual: "18", status: "Amber", owner: "Transaction Banking" },
@@ -30,6 +32,53 @@ const modules = [
 export default function Home() {
   const [filter, setFilter] = useState("All");
   const [query, setQuery] = useState("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [inspection, setInspection] = useState<UploadInspection | null>(null);
+  async function inspectUpload() {
+    if (!uploadFile) { setUploadMessage("Choose a CSV or Excel file first."); return; }
+    const extension = uploadFile.name.toLowerCase().split(".").pop();
+    if (extension !== "csv" && extension !== "xlsx") { setUploadMessage("Only .csv and .xlsx files are supported."); return; }
+    if (uploadFile.size > 10 * 1024 * 1024) { setUploadMessage("File size must not exceed 10 MB."); return; }
+    setUploadBusy(true); setUploadMessage(""); setInspection(null);
+    try {
+      const form = new FormData();
+      form.append("file", uploadFile);
+      const response = await fetch("/api/kri/inspect", { method: "POST", body: form });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || "Unable to inspect this file.");
+      setInspection(result);
+      setUploadMessage(result.ready ? "File validated successfully. You can now generate a KRI report." : "File inspected, but required columns need attention.");
+    } catch (error) {
+      setUploadMessage(error instanceof Error ? error.message : "Unable to inspect this file.");
+    } finally { setUploadBusy(false); }
+  }
+
+  async function processUpload() {
+    if (!uploadFile || !inspection?.ready) return;
+    setUploadBusy(true); setUploadMessage("");
+    try {
+      const form = new FormData();
+      form.append("file", uploadFile);
+      const response = await fetch("/api/kri/report", { method: "POST", body: form });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.detail || "Report processing failed.");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "KRI_Processed_Report.pdf";
+      document.body.appendChild(link); link.click(); link.remove();
+      URL.revokeObjectURL(url);
+      setUploadMessage("Processing complete. Your KRI PDF report has been downloaded.");
+    } catch (error) {
+      setUploadMessage(error instanceof Error ? error.message : "Report processing failed.");
+    } finally { setUploadBusy(false); }
+  }
+
   const filtered = useMemo(() => records.filter((r) =>
     (filter === "All" || r.status === filter) &&
     (r.name + r.department + r.code).toLowerCase().includes(query.toLowerCase())
@@ -54,6 +103,30 @@ export default function Home() {
         <header className="dashTop"><div><span className="crumb">KRI MANAGEMENT / OVERVIEW</span><h1>Risk monitoring dashboard</h1><p>Consolidated view of Head Office Key Risk Indicators</p></div><div className="topActions"><span className="periodChip">◷ &nbsp; Reporting period: Nov 2026</span><span className="prototypeChip">SAMPLE DATA</span></div></header>
 
         <div className="welcomeStrip"><div><span className="stripEyebrow">MONTHLY OPERATIONAL RISK REVIEW</span><h2>Good morning, Risk Team</h2><p>Monitor submissions, identify exceptions and follow up with departments from one workspace.</p></div><a className="primaryAction" href="/kri-workspace">Open KRI workspace&nbsp; →</a></div>
+
+        <section className="dashboardUpload">
+          <div className="dashboardUploadIntro">
+            <span className="sectionEyebrow">DATA INTAKE · FILE PROCESSING</span>
+            <h3>Upload KRI data file</h3>
+            <p>Upload a department KRI dataset in CSV or Excel format. The system will validate its columns and prepare a downloadable risk report.</p>
+            <small>Supported formats: .csv, .xlsx · Maximum file size: 10 MB</small>
+          </div>
+          <div className="dashboardUploadControls">
+            <label className="uploadFileLabel" htmlFor="kri-dashboard-file">Select data file</label>
+            <input id="kri-dashboard-file" type="file" accept=".csv,.xlsx" onChange={e => { setUploadFile(e.target.files?.[0] ?? null); setInspection(null); setUploadMessage(""); }} />
+            {uploadFile && <span className="selectedFileName">{uploadFile.name} · {(uploadFile.size / 1024).toFixed(1)} KB</span>}
+            <div className="uploadButtonRow">
+              <button className="uploadSecondaryButton" onClick={inspectUpload} disabled={!uploadFile || uploadBusy}>{uploadBusy ? "Checking…" : "Validate file"}</button>
+              <button className="uploadPrimaryButton" onClick={processUpload} disabled={!inspection?.ready || uploadBusy}>{uploadBusy ? "Processing…" : "Process & download report"}</button>
+            </div>
+            {inspection && <div className={inspection.ready ? "uploadResult success" : "uploadResult warning"}>
+              <b>{inspection.ready ? "File ready for processing" : "File needs correction"}</b>
+              <span>{inspection.data_rows} data rows detected · {inspection.detected_columns.length} columns mapped</span>
+              {inspection.missing_fields.length > 0 && <span>Missing fields: {inspection.missing_fields.join(", ")}</span>}
+            </div>}
+            {uploadMessage && <p className="uploadFeedback" role="status">{uploadMessage}</p>}
+          </div>
+        </section>
 
         <section className="metricGrid">
           <article className="metricCard"><div className="metricLabel">KRI SUBMISSIONS</div><div className="metricValue">37 <span>/ 42</span></div><div className="metricFoot"><span className="metricGood">↗ 88%</span> reporting completion</div><div className="progressTrack"><i style={{width:"88%"}} /></div></article>
