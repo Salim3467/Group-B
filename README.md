@@ -39,7 +39,7 @@ Suggested synthetic values for a demo:
 - [Digital Banking monthly KRI template](Digi.csv)
 - [HR quarterly KRI template](HR.csv)
 
-The KRI inventory uses the indicators represented in these templates. IT and Digital Banking threshold values shown in the demo are illustrative only. The HR template records Green below 10%, Amber above 10% to 12%, and Red above 12%; exactly 10% is not explicitly classified in the source and is flagged as a threshold gap.
+The KRI inventory uses the indicators represented in these templates. IT and Digital Banking use provisional training bands of below 5 hours for Green, 5 to below 7 for Amber, and 7 or more for Red; these are not approved bank thresholds. The HR template records Green below 10%, Amber above 10% to 12%, and Red above 12%; because the source does not classify exactly 10%, the training prototype provisionally treats 10% as Amber.
 
 ## Prototype boundaries — important
 

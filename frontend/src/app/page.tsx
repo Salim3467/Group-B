@@ -22,7 +22,7 @@ const departments = [
 
 const modules = [
   { n: "01", title: "KRI inventory", desc: "Maintain KRI definitions, owners, units and approved limits.", href: "/kri-workspace", tag: "Master data" },
-  { n: "02", title: "Monthly collection", desc: "Capture departmental results, explanations and evidence.", href: "/kri-workspace", tag: "Department portal" },
+  { n: "02", title: "Monthly collection", desc: "Capture departmental results, explanations and evidence.", href: "/kri-workspace", tag: "HO Units" },
   { n: "03", title: "Review & approval", desc: "Review submissions, return for correction and accept returns.", href: "/kri-workspace", tag: "Workflow" },
   { n: "04", title: "Reminders & escalation", desc: "Track reporting deadlines, reminders and overdue follow-up.", href: "/kri-workspace", tag: "Automation" },
   { n: "05", title: "Risk analytics", desc: "Monitor RAG status, exceptions and historical movements.", href: "/kri-report", tag: "Risk monitoring" },
@@ -112,10 +112,11 @@ export default function Home() {
   return (
     <main className="appShell">
       <aside className="sideNav">
-        <a className="sideBrand" href="/"><span className="sideLogo">N</span><span><b>NABIL</b><small>Operational Risk Portal</small></span></a>
+        <a className="sideBrand" href="/"><img className="sideBrandLogo" src="/nabil-bank-logo.svg" alt="NABIL Bank" /><span><small>Operational Risk Portal</small></span></a>
         <div className="navCaption">WORKSPACE</div>
         <a className="navItem active" href="/">▦ <span>Overview</span></a>
         <a className="navItem" href="/kri-workspace">▤ <span>Monthly collection</span></a>
+        <a className="navItem" href="/department-portal">＋ <span>HO Units</span></a>
         <a className="navItem" href="/kri-report">▧ <span>Report generator</span></a>
         <div className="navCaption">MANAGEMENT</div>
         <a className="navItem" href="/kri-workspace">◫ <span>KRI inventory</span></a>
