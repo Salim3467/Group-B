@@ -112,10 +112,11 @@ export default function Home() {
   return (
     <main className="appShell">
       <aside className="sideNav">
-        <a className="sideBrand" href="/"><span className="sideLogo">N</span><span><b>NABIL</b><small>Operational Risk Portal</small></span></a>
+        <a className="sideBrand" href="/"><img className="sideBrandLogo" src="/nabil-bank-logo.svg" alt="NABIL Bank" /><span><small>Operational Risk Portal</small></span></a>
         <div className="navCaption">WORKSPACE</div>
         <a className="navItem active" href="/">▦ <span>Overview</span></a>
         <a className="navItem" href="/kri-workspace">▤ <span>Monthly collection</span></a>
+        <a className="navItem" href="/department-portal">＋ <span>Department portal</span></a>
         <a className="navItem" href="/kri-report">▧ <span>Report generator</span></a>
         <div className="navCaption">MANAGEMENT</div>
         <a className="navItem" href="/kri-workspace">◫ <span>KRI inventory</span></a>
@@ -125,9 +126,9 @@ export default function Home() {
       </aside>
 
       <section className="mainPanel">
-        <header className="dashTop"><div><span className="crumb">KRI MANAGEMENT / OVERVIEW</span><h1>Risk monitoring dashboard</h1><p>Consolidated view of Head Office Key Risk Indicators</p></div><div className="topActions"><button className="topUploadButton" onClick={() => uploadInputRef.current?.click()}>↑ &nbsp; Upload KRI File</button><input ref={uploadInputRef} id="kri-dashboard-file" type="file" accept=".csv,.xlsx" hidden onChange={e => { setUploadFile(e.target.files?.[0] ?? null); setInspection(null); setUploadMessage(""); }} /><span className="periodChip">◷ &nbsp; Reporting period: Nov 2026</span><span className="prototypeChip">SAMPLE DATA</span></div></header>
+        <header className="dashTop"><div><span className="crumb">KRI MANAGEMENT / OVERVIEW</span><h1>Risk Indicator</h1><p>Consolidated view of Head Office Key Risk Indicators</p></div><div className="topActions"><button className="topUploadButton" onClick={() => uploadInputRef.current?.click()}>↑ &nbsp; Upload KRI File</button><input ref={uploadInputRef} id="kri-dashboard-file" type="file" accept=".csv,.xlsx" hidden onChange={e => { setUploadFile(e.target.files?.[0] ?? null); setInspection(null); setUploadMessage(""); }} /><span className="periodChip">◷ &nbsp; Reporting period: Nov 2026</span><span className="prototypeChip">SAMPLE DATA</span></div></header>
 
-        <div className="welcomeStrip"><div><span className="stripEyebrow">MONTHLY OPERATIONAL RISK REVIEW</span><h2>Good morning, Risk Team</h2><p>Monitor submissions, identify exceptions and follow up with departments from one workspace.</p></div><a className="primaryAction" href="/kri-workspace">Open KRI workspace&nbsp; →</a></div>
+        <div className="welcomeStrip"><div><span className="stripEyebrow">MONTHLY OPERATIONAL RISK REVIEW</span><h2>Good Morning Team,</h2><p>Monitor submissions, identify exceptions and follow up with departments from one workspace.</p></div><a className="primaryAction" href="/kri-workspace">Open KRI workspace&nbsp; →</a></div>
 
         <section className="dashboardUpload">
           <div className="dashboardUploadIntro">

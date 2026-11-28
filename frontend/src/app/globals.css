@@ -73,7 +73,7 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 10px
 @media(max-width:650px) { .workspaceFilters,.kriEntryFields { grid-template-columns:1fr; }.kriSummary { grid-template-columns:repeat(2,1fr); }.uploadCard,.noteCard { padding:17px; }.uploadHeading { align-items:flex-start; flex-direction:column; } }
 
 /* KRI dashboard interface */
-.appShell{min-height:100vh;display:grid;grid-template-columns:238px minmax(0,1fr);background:#f4f7fa;color:#203447;font-family:Arial,Helvetica,sans-serif}
+.appShell{min-height:100vh;display:grid;grid-template-columns:238px minmax(0,1fr);background:#f4f7fa;color:#203447;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .sideNav{background:#102f45;color:#d8e5ec;min-height:100vh;padding:25px 16px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
 .sideBrand{display:flex;gap:11px;align-items:center;text-decoration:none;color:#fff;padding:0 8px 31px;border-bottom:1px solid #29485b}
 .sideLogo{height:38px;width:38px;border-radius:11px;background:#1b817c;display:grid;place-items:center;font-weight:800;font-size:20px;color:white}
@@ -116,3 +116,147 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 10px
 @media(max-width:850px){.dashboardUpload{grid-template-columns:1fr;gap:15px}}
 
 .topUploadButton{border:0;border-radius:7px;background:#176a70;color:#fff;padding:10px 13px;font-size:10px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 5px rgba(20,84,90,.12)}.topUploadButton:hover{background:#12565c}.topUploadButton:focus-visible{outline:3px solid #9bd5cd;outline-offset:2px}
+
+/* Keep dashboard form controls consistent with the modern system font. */
+.appShell button,.appShell input,.appShell select,.appShell textarea{font-family:inherit}
+
+
+/* Application-wide visual refresh: NABIL Risk Indicator + department portal */
+:root{--brand-950:#102f45;--brand-800:#17475a;--brand-700:#176a70;--brand-600:#1d817d;--surface:#fff;--surface-soft:#f6f9fa;--border:#e1e9ed;--text-main:#1b3548;--text-muted:#71828e;--shadow-soft:0 12px 32px rgba(19,53,72,.055)}
+html,body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.appShell{background:#f2f6f8}.sideNav{background:linear-gradient(180deg,#102f45 0%,#12394e 100%)}.sideLogo{box-shadow:0 5px 14px rgba(24,129,123,.24)}
+.navItem{transition:background .18s ease,color .18s ease,transform .18s ease}.navItem:hover{transform:translateX(2px)}
+.mainPanel{padding-left:clamp(18px,3vw,42px);padding-right:clamp(18px,3vw,42px)}
+.dashTop{min-height:96px}.dashTop h1{font-size:26px;font-weight:750;letter-spacing:-.8px}
+.welcomeStrip{box-shadow:0 12px 24px rgba(18,59,81,.12);background:linear-gradient(112deg,#12394f 0%,#176a70 100%)}
+.metricCard,.dashCard,.dashModule,.dashboardUpload{box-shadow:0 3px 12px rgba(20,54,72,.025);transition:box-shadow .18s ease,border-color .18s ease,transform .18s ease}
+.metricCard:hover,.dashCard:hover,.dashModule:hover,.dashboardUpload:hover{box-shadow:var(--shadow-soft);border-color:#cbdde2}
+.metricCard{border-radius:13px;padding:19px;min-height:137px}.metricLabel{letter-spacing:.85px}.metricValue{font-size:32px;letter-spacing:-1px}
+.dashCard{border-radius:13px;padding:20px}.dashModule{border-radius:12px;padding:17px}.dashboardUpload{border-radius:13px;padding:22px}
+.topUploadButton,.uploadPrimaryButton,.uploadSecondaryButton,.primaryAction,.generateButton{transition:transform .15s ease,filter .15s ease,box-shadow .15s ease}
+.topUploadButton:hover,.uploadPrimaryButton:hover,.uploadSecondaryButton:hover,.primaryAction:hover,.generateButton:hover{filter:brightness(1.04);transform:translateY(-1px)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #8bcac2;outline-offset:2px}
+
+/* Department portal aligned to the same enterprise dashboard design. */
+.departmentPortal{background:#f2f6f8!important;color:#1b3548!important;padding:30px 18px 48px!important}
+.departmentPortal>div{max-width:1120px!important}
+.departmentPortal>div>header{min-height:62px;border-bottom:1px solid #e1e9ed;padding:0 2px 16px;margin-bottom:26px!important}
+.departmentPortal>div>header a{color:#176f6b!important;font-size:12px;letter-spacing:.25px}
+.departmentPortal>div>header span{font-size:11px!important}
+.departmentPortal>div>section{border:1px solid #e1e9ed!important;border-radius:16px!important;padding:clamp(20px,3vw,34px)!important;box-shadow:0 12px 32px rgba(19,53,72,.055)!important}
+.departmentPortal>div>section>p:first-child{font-size:10px!important;letter-spacing:1.5px!important}
+.departmentPortal h1{font-size:clamp(27px,3.5vw,36px)!important;line-height:1.15!important;letter-spacing:-1px!important;color:#15394f!important;font-weight:750!important}
+.departmentPortal h2{font-size:16px!important;color:#173d52!important;font-weight:700!important;border-bottom-color:#e7edf0!important;padding-bottom:12px!important}
+.departmentPortal h3{font-size:13px!important;color:#29485a!important;font-weight:650!important}
+.departmentPortal label{font-size:11px!important;color:#526a79!important;gap:8px!important}
+.departmentPortal input,.departmentPortal select,.departmentPortal textarea{font:13px Inter,ui-sans-serif,system-ui,sans-serif!important;min-height:42px!important;border:1px solid #d6e1e7!important;border-radius:9px!important;padding:10px 12px!important;background:#fff!important;transition:border-color .15s ease,box-shadow .15s ease}
+.departmentPortal input:focus,.departmentPortal select:focus,.departmentPortal textarea:focus{border-color:#58aaa2!important;box-shadow:0 0 0 3px rgba(43,143,133,.10)!important;outline:0!important}
+.departmentPortal article{padding:17px 0!important;border-bottom:1px solid #edf1f3!important}.departmentPortal article:last-child{border-bottom:0!important}
+.departmentPortal button{font:600 12px Inter,ui-sans-serif,system-ui,sans-serif!important;border-radius:9px!important;padding:12px 17px!important;min-height:42px;transition:transform .15s ease,filter .15s ease}
+.departmentPortal button:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.departmentPortal button:first-child{background:#155b62!important;box-shadow:0 5px 12px rgba(21,91,98,.13)}
+.departmentPortal button:nth-child(2){background:#eef4f6!important;color:#244d60!important;border:1px solid #d9e4e9!important}
+.departmentPortal [role="status"]{border:1px solid #d6eadf!important;background:#f0f8f3!important;border-radius:10px!important;padding:13px 15px!important}
+.departmentPortal>div>section>p:last-child{font-size:10px!important;color:#81919b!important}
+@media(max-width:650px){.departmentPortal{padding:18px 12px 30px!important}.departmentPortal>div>header{align-items:flex-start!important;flex-direction:column;gap:9px!important}.departmentPortal>div>section{padding:20px 16px!important}}
+
+
+/* Light green dashboard theme */
+:root{
+  --ink:#193b2d;
+  --muted:#667f70;
+  --line:#dcebe0;
+  --navy:#1c4935;
+  --teal:#27845a;
+  --bg:#f2f8f2;
+}
+.appShell{
+  background:linear-gradient(135deg,#f3faf3 0%,#edf6ee 52%,#f7fbf7 100%);
+  color:#1c3e2e;
+}
+.sideNav{
+  background:linear-gradient(180deg,#e2f1e4 0%,#d8ebdc 100%);
+  color:#315c43;
+  border-right:1px solid #cfe3d3;
+}
+.sideBrand{color:#19452e;border-bottom-color:#c7dfcc}
+.sideBrand small,.sideFoot small{color:#64816c}
+.sideLogo{background:linear-gradient(145deg,#3c9a64,#24784d);box-shadow:0 6px 15px rgba(42,125,77,.18)}
+.navCaption{color:#6d9277}
+.navItem{color:#426b50}
+.navItem.active,.navItem:hover{background:#c5e2cb;color:#194d30}
+.navItem.active{box-shadow:inset 3px 0 #2f9257}
+.sideFoot{border-top-color:#c7dfcc}
+.sideFoot b{color:#214b32}
+.avatar{background:#c1dfc8;color:#245d39}
+.dashTop{border-bottom-color:#dcebe0}
+.crumb,.sectionEyebrow{color:#348657}
+.dashTop h1{color:#1c4935}
+.dashTop p{color:#6c8474}
+.periodChip{background:#fafffa;border-color:#d8e9dc;color:#52715c}
+.prototypeChip{background:#fff5dc;border-color:#f0dfb9;color:#89651f}
+.welcomeStrip{
+  background:linear-gradient(112deg,#d9efdc 0%,#c6e7ce 54%,#b8dfc3 100%);
+  border:1px solid #c3e1ca;
+  box-shadow:0 12px 25px rgba(48,112,67,.09);
+  color:#1c4930;
+}
+.stripEyebrow{color:#3e8153}
+.welcomeStrip h2{color:#1b4b31}
+.welcomeStrip p{color:#4e7058}
+.primaryAction{background:#28794b;color:#fff;box-shadow:0 5px 12px rgba(40,121,75,.16)}
+.metricCard,.dashCard,.dashModule,.dashboardUpload{
+  border-color:#dcebe0;
+  box-shadow:0 4px 14px rgba(39,91,54,.045);
+}
+.metricCard:hover,.dashCard:hover,.dashModule:hover,.dashboardUpload:hover{
+  border-color:#b7d9bf;
+  box-shadow:0 12px 28px rgba(39,91,54,.09);
+}
+.metricLabel{color:#718a77}
+.metricValue{color:#204c34}
+.metricGood,.stateComplete{color:#27834e}
+.progressTrack{background:#e9f2e9}
+.progressTrack i{background:linear-gradient(90deg,#65b879,#2f8e55)}
+.metricFlag.redFlag{background:#fff0ed;color:#ae4940}
+.metricFlag.amberFlag{background:#fff5df;color:#956b1d}
+.cardHead h3,.moduleSectionHead h3{color:#214b34}
+.subtleTag{background:#eff7ef;color:#66816b}
+.donut{background:conic-gradient(#3e9b62 0 64.3%,#e5b34f 64.3% 92.8%,#c95c55 92.8% 100%)}
+.legend b{color:#244b35}
+.legend{color:#5f7865}
+.deptTop{color:#587360}
+.deptTop b{color:#315b3e}
+.stateProgress{color:#a27627}
+.statePending{color:#b14c45}
+.textLink,.dashModule>b{color:#2b8050}
+.tableTools input{border-color:#d8e8db;outline-color:#65ae78}
+.filterTabs button{background:#f0f6f0;color:#627a67}
+.filterTabs button.selected{background:#dff0e2;color:#267447}
+.riskTable th{background:#f3f8f3;color:#6f8774}
+.riskTable td{border-top-color:#edf4ed;color:#587061}
+.riskTable td b{color:#294d36}
+.dashModule{background:#fff}
+.moduleLine>span{color:#348657}
+.moduleLine small{background:#eff7ef;color:#68816d}
+.topUploadButton,.uploadPrimaryButton{background:#28794b;color:#fff}
+.topUploadButton:hover,.uploadPrimaryButton:hover{background:#216a40}
+.uploadSecondaryButton{background:#e6f2e8;color:#2d6941}
+.uploadSecondaryButton:hover{background:#d9ebdd}
+.dashboardUploadIntro h3{color:#214b34}
+.dashboardUploadIntro p{color:#6b8371}
+.dashboardUpload{background:rgba(255,255,255,.94)}
+.uploadResult.success{background:#eaf6ec;color:#286b40}
+.uploadResult.warning{background:#fff6e6;color:#8a641e}
+.dashFooter{border-top-color:#dcebe0;color:#7c9280}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline-color:#77bd86}
+@media(max-width:720px){
+  .sideNav{background:linear-gradient(100deg,#e2f1e4,#d8ebdc)}
+  .sideBrand{border-bottom:0}
+}
+
+/* NABIL Bank wordmark in the dashboard sidebar */
+.sideBrand{gap:10px}
+.sideBrandLogo{display:block;width:146px;height:auto;max-height:42px;object-fit:contain;border-radius:5px}
+.sideBrand>span:last-child small{color:#54745e;font-size:10px;letter-spacing:.2px}
+@media(max-width:720px){.sideBrandLogo{width:138px;max-height:36px}}

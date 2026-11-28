@@ -96,9 +96,13 @@ export async function normalizeDataset(buffer: Buffer, filename: string): Promis
   if (parsed.dataRows.length > 5000) throw new Error("A maximum of 5,000 KRI rows can be processed at once.");
   return parsed.dataRows.map((source, index) => {
     const value = (field: Canonical) => source[parsed.mapping[field] ?? ""] ?? "";
-    const actual = Number(String(value("Actual")).replace(/,/g, ""));
-    const green = Number(String(value("Green_Limit")).replace(/,/g, ""));
-    const red = Number(String(value("Red_From")).replace(/,/g, ""));
+    const actualText = String(value("Actual")).trim();
+    const greenText = String(value("Green_Limit")).trim();
+    const redText = String(value("Red_From")).trim();
+    if (!actualText || !greenText || !redText) throw new Error("Actual and threshold fields cannot be blank (data row " + (index + 1) + ").");
+    const actual = Number(actualText.replace(/,/g, ""));
+    const green = Number(greenText.replace(/,/g, ""));
+    const red = Number(redText.replace(/,/g, ""));
     const direction = String(value("Direction") || "HIGHER").trim().toUpperCase();
     const kri = String(value("KRI")).trim(), department = String(value("Department")).trim(), period = String(value("Period")).trim();
     if (!kri || !department || !period) throw new Error("KRI, Department and Period cannot be blank (data row " + (index + 1) + ").");
@@ -107,8 +111,8 @@ export async function normalizeDataset(buffer: Buffer, filename: string): Promis
     if (direction === "HIGHER" && green >= red) throw new Error("For HIGHER indicators, Green Limit must be lower than Red Threshold (data row " + (index + 1) + ").");
     if (direction === "LOWER" && green <= red) throw new Error("For LOWER indicators, Green Limit must be higher than Red Threshold (data row " + (index + 1) + ").");
     const status = kri.toLowerCase().includes("employee turnover")
-      ? (actual < green ? "GREEN" : actual === green ? "THRESHOLD GAP" : actual <= red ? "AMBER" : "RED")
-      : direction === "HIGHER" ? (actual <= green ? "GREEN" : actual >= red ? "RED" : "AMBER") : (actual >= green ? "GREEN" : actual <= red ? "RED" : "AMBER");
+      ? (actual < green ? "GREEN" : actual <= red ? "AMBER" : "RED")
+      : direction === "HIGHER" ? (actual < green ? "GREEN" : actual >= red ? "RED" : "AMBER") : (actual >= green ? "GREEN" : actual <= red ? "RED" : "AMBER");
     return { KRI: kri, Department: department, Period: period, Actual: actual, Green_Limit: green, Red_From: red, Direction: direction, RAG_Status: status };
   });
 }

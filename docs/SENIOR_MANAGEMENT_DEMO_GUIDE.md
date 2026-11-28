@@ -76,7 +76,7 @@ Open **KRI inventory** and show:
 - Appetite/tolerance fields and risk direction.
 - Threshold approval flag.
 
-Important: IT and Digital Banking limits shown in the demo are illustrative, not approved. The HR source indicates Green below 10%, Amber above 10% through 12%, and Red above 12%. Exactly 10% is not specified in the source and is flagged as a threshold gap. Do not describe any demonstration limit as formally approved.
+Important: IT and Digital Banking limits shown in the demo are provisional training bands, not approved. The HR source indicates Green below 10%, Amber above 10% through 12%, and Red above 12%; the prototype provisionally treats exactly 10% as Amber because the source leaves that boundary undefined. Do not describe any demonstration limit as formally approved.
 
 ### 6. Generate the management report (1 minute)
 

@@ -8,7 +8,10 @@ type Metric = {
   appetite: number; tolerance: number; direction: "HIGHER" | "LOWER";
   approved: boolean; source: string;
 };
-type Value = { actual: string; occurred: string; location: string; remarks: string };
+type Value = {
+  actual: string; occurred: string; location: string; remarks: string;
+  resignedStaff?: string; currentStaff?: string;
+};
 type Submission = {
   id: string; department: string; period: string; frequency: string;
   dueDate: string; status: "REQUESTED" | "SUBMITTED" | "RETURNED" | "APPROVED";
@@ -21,18 +24,18 @@ type Log = { id: string; at: string; department: string; action: string; detail:
 const initialMetrics: Metric[] = [
   ...["Core Banking System", "SWIFT", "Email", "Overall Data Centre", "ATM"].map((name, i) => ({
     id: `IT-${String(i + 1).padStart(2, "0")}`, department: "Information Technology",
-    name: name + " downtime", unit: "Hours", appetite: 2, tolerance: 5,
+    name: name + " downtime", unit: "Hours", appetite: 5, tolerance: 7,
     direction: "HIGHER" as const, approved: false, source: "Illustrative demo limits – approval pending"
   })),
   ...["Mobile Banking", "Internet Banking", "e@nabil", "corporatePAY", "ATM"].map((name, i) => ({
     id: `DG-${String(i + 1).padStart(2, "0")}`, department: "Digital Banking",
-    name: name + " downtime", unit: "Hours", appetite: 2, tolerance: 5,
+    name: name + " downtime", unit: "Hours", appetite: 5, tolerance: 7,
     direction: "HIGHER" as const, approved: false, source: "Illustrative demo limits – approval pending"
   })),
   { id: "HR-01", department: "Human Resources", name: "Employee turnover", unit: "%", appetite: 10, tolerance: 12, direction: "HIGHER" as const, approved: false, source: "Source template classification – confirmation pending" }
 ];
 
-const departments = ["Information Technology", "Digital Banking", "Human Resources"];
+const departments = ["Information Technology", "Digital Banking", "Human Resources", "SME & MF Lending", "Finance Department", "Central Trade Operation", "Risk Department"];
 const today = () => { const d = new Date(); return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-"); };
 const fmt = (value: string) => value ? new Date(value + "T00:00:00").toLocaleDateString("en-GB") : "—";
 const blankValue = (): Value => ({ actual: "", occurred: "", location: "", remarks: "" });
@@ -49,9 +52,16 @@ function addWorkingDays(start: Date, days: number) {
 function statusFor(metric: Metric, raw: string) {
   if (raw.trim() === "" || !Number.isFinite(Number(raw))) return "NOT REPORTED";
   const n = Number(raw);
-  if (metric.id === "HR-01") return n < metric.appetite ? "GREEN" : n === metric.appetite ? "THRESHOLD GAP" : n <= metric.tolerance ? "AMBER" : "RED";
-  if (metric.direction === "HIGHER") return n <= metric.appetite ? "GREEN" : n < metric.tolerance ? "AMBER" : "RED";
+  if (metric.id === "HR-01") return n < metric.appetite ? "GREEN" : n <= metric.tolerance ? "AMBER" : "RED";
+  if (metric.direction === "HIGHER") return n < metric.appetite ? "GREEN" : n < metric.tolerance ? "AMBER" : "RED";
   return n >= metric.appetite ? "GREEN" : n > metric.tolerance ? "AMBER" : "RED";
+}
+function hrTurnover(value: Value) {
+  if (!value.resignedStaff?.trim() || !value.currentStaff?.trim()) return null;
+  const resigned = Number(value.resignedStaff);
+  const current = Number(value.currentStaff);
+  return Number.isInteger(resigned) && Number.isInteger(current) && resigned >= 0 && current > 0
+    ? (resigned / current) * 100 : null;
 }
 function displayStatus(s: Submission) {
   if ((s.status === "REQUESTED" || s.status === "RETURNED") && s.dueDate < today()) return "OVERDUE";
@@ -101,6 +111,7 @@ export default function KriWorkspace() {
   const pending = submissions.filter(s => s.status === "REQUESTED" || s.status === "RETURNED").length;
   const overdue = submissions.filter(s => (s.status === "REQUESTED" || s.status === "RETURNED") && s.dueDate < today()).length;
   const reviewQueue = submissions.filter(s => s.status === "SUBMITTED");
+  const approvedSubmissions = submissions.filter(s => s.status === "APPROVED");
   const totalExpected = submissions.reduce((n, s) => n + metrics.filter(m => m.department === s.department).length, 0);
   const totalReported = assessed.length;
 
@@ -108,7 +119,8 @@ export default function KriWorkspace() {
     setLogs(old => [{ id: newId(), at: new Date().toLocaleString(), department, action, detail }, ...old].slice(0, 100));
   }
   function startCycle() {
-    const activeDepts = includeHR ? departments : departments.filter(d => d !== "Human Resources");
+    const configuredDepartments = departments.filter(department => metrics.some(metric => metric.department === department));
+    const activeDepts = includeHR ? configuredDepartments : configuredDepartments.filter(d => d !== "Human Resources");
     const existing = submissions.filter(s => s.period === period).map(s => s.department);
     const missing = activeDepts.filter(d => !existing.includes(d));
     if (!missing.length) { setMessage("A collection cycle for this period already exists."); return; }
@@ -125,6 +137,31 @@ export default function KriWorkspace() {
     created.forEach(s => logAction(s.department, "Request issued (simulated)", `KRI request for ${period}; due ${fmt(s.dueDate)}.`));
     setMessage(`Collection cycle created for ${missing.join(", ")}. Email dispatch is simulated in this demonstration.`);
   }
+  function openDepartment(department: string) {
+    const existing = submissions.find(s => s.period === period && s.department === department);
+    if (existing) {
+      setSelectedId(existing.id);
+      setTab("Department entry");
+      setMessage("");
+      return;
+    }
+    const requestDate = new Date(cycleDate + "T00:00:00");
+    const nextMonthStart = new Date(requestDate.getFullYear(), requestDate.getMonth() + 1, 1);
+    const draft: Submission = {
+      id: newId(), department, period,
+      frequency: department === "Human Resources" ? "Quarterly" : "Monthly",
+      dueDate: addWorkingDays(department === "Human Resources" ? nextMonthStart : requestDate, 13),
+      status: "REQUESTED", requestedAt: today(), reminders: 0, lastReminder: "",
+      submittedAt: "", reviewedAt: "", reviewerNote: "",
+      values: Object.fromEntries(metrics.filter(m => m.department === department).map(m => [m.id, blankValue()]))
+    };
+    setSubmissions(old => [...old, draft]);
+    logAction(department, "Department entry opened", `Draft KRI entry created for ${period}.`);
+    setSelectedId(draft.id);
+    setTab("Department entry");
+    setMessage("");
+  }
+
   function sendReminder(s: Submission) {
     setSubmissions(old => old.map(x => x.id === s.id ? { ...x, reminders: x.reminders + 1, lastReminder: today() } : x));
     logAction(s.department, "Reminder issued (simulated)", `Reminder #${s.reminders + 1} for ${s.period} submission.`);
@@ -138,9 +175,22 @@ export default function KriWorkspace() {
   }
   function submitDepartment(s: Submission) {
     const deptMetrics = metrics.filter(m => m.department === s.department);
-    const complete = deptMetrics.every(m => (s.values[m.id]?.actual ?? "").trim() !== "");
+    const complete = deptMetrics.every(m => {
+      const value = s.values[m.id] ?? blankValue();
+      if (m.id === "HR-01") return hrTurnover(value) !== null;
+      const actual = Number(value.actual);
+      return value.actual.trim() !== "" && Number.isFinite(actual) && actual >= 0 && (value.occurred === "Yes" || value.occurred === "No");
+    });
     if (!complete) { setMessage("Complete all KRI values for this department before submitting."); return; }
-    setSubmissions(old => old.map(x => x.id === s.id ? { ...x, status: "SUBMITTED", submittedAt: today() } : x));
+    setSubmissions(old => old.map(x => {
+      if (x.id !== s.id) return x;
+      const values = { ...x.values };
+      if (s.department === "Human Resources") {
+        const value = values["HR-01"] ?? blankValue();
+        values["HR-01"] = { ...value, actual: hrTurnover(value)!.toFixed(4) };
+      }
+      return { ...x, values, status: "SUBMITTED", submittedAt: today() };
+    }));
     logAction(s.department, "Department submission received", `Submission for ${s.period} sent to ORMD for review.`);
     setSelectedId("");
     setMessage(`${s.department} submission sent for ORMD review.`);
@@ -150,6 +200,11 @@ export default function KriWorkspace() {
     logAction(s.department, decision === "APPROVED" ? "Submission approved" : "Submission returned", reviewNote || `ORMD marked submission ${decision.toLowerCase()}.`);
     setReviewNote("");
     setMessage(`Submission ${decision.toLowerCase()}.`);
+  }
+  function reopenSubmission(s: Submission) {
+    setSubmissions(old => old.map(x => x.id === s.id ? { ...x, status: "RETURNED", reviewedAt: today() } : x));
+    logAction(s.department, "Approved submission reopened", `ORMD reopened the ${s.period} submission for correction.`);
+    setMessage(`${s.department} submission reopened for correction.`);
   }
   function updateMetric(id: string, field: keyof Metric, value: string | number | boolean) {
     setMetrics(old => old.map(m => m.id === id ? ({ ...m, [field]: value, source: field === "approved" && value === true ? "Marked approved in demo workspace" : m.source } as Metric) : m));
@@ -193,8 +248,8 @@ export default function KriWorkspace() {
       <aside className="kriSidebar">
         <a className="kriBrand" href="/"><span className="kriLogo">N</span><span><b>NABIL</b><small>Operational Risk Portal</small></span></a>
         <p className="navLabel">WORKSPACE</p>
-        {["Overview","Collection","Review queue","KRI inventory","Reports","Activity log"].map(t =>
-          <button key={t} className={tab===t?"navButton active":"navButton"} onClick={()=>{setTab(t);setSelectedId("");}}>{({Overview:"▦",Collection:"▤","Review queue":"✓","KRI inventory":"◫",Reports:"▧","Activity log":"⌁"} as Record<string,string>)[t]} <span>{t}</span></button>
+        {["Overview","Departments","Collection","Review queue","KRI inventory","Reports","Activity log"].map(t =>
+          <button key={t} className={tab===t?"navButton active":"navButton"} onClick={()=>{setTab(t);setSelectedId("");}}>{({Overview:"▦",Departments:"▣",Collection:"▤","Review queue":"✓","KRI inventory":"◫",Reports:"▧","Activity log":"⌁"} as Record<string,string>)[t]} <span>{t}</span></button>
         )}
         <div className="sidebarBottom"><b>ORMD DEMO</b><small>Local prototype · Synthetic data</small><button onClick={resetDemo}>Reset demo data</button></div>
       </aside>
@@ -225,6 +280,31 @@ export default function KriWorkspace() {
             <section className="panel"><div className="panelHead"><div><small>END-TO-END PROCESS</small><h3>Demonstration sequence</h3></div></div><div className="processSteps">{["Create reporting cycle","Department submits KRI values","ORMD reviews submission","Assess against appetite / tolerance","Generate PDF report"].map((x,i)=><div key={x}><span>{String(i+1).padStart(2,"0")}</span><b>{x}</b></div>)}</div></section>
           </>}
 
+          {tab === "Departments" && <>
+            <section className="panel">
+              <div className="panelHead"><div><small>DEPARTMENT WORKSPACE</small><h3>Select your department to enter KRI data</h3></div><span className="countBadge">{departments.length} departments</span></div>
+              <p className="mutedText">Choose the department you represent. The corresponding KRI entry form will open for the selected reporting period. Existing entries for the same period will be reopened.</p>
+              <div className="departmentCards">
+                {departments.map((department) => {
+                  const record = submissions.find(s => s.department === department && s.period === period);
+                  const count = metrics.filter(m => m.department === department).length;
+                  const icon = department === "Information Technology" ? "IT" : department === "Digital Banking" ? "DB" : department === "Human Resources" ? "HR" : department === "SME & MF Lending" ? "SME" : department === "Finance Department" ? "FIN" : department === "Central Trade Operation" ? "CTO" : "RISK";
+                  const templateReady = count > 0;
+                  const frequency = department === "Human Resources" ? "Quarterly" : "Monthly";
+                  return <article className="departmentCard" key={department}>
+                    <div className="departmentCardIcon">{icon}</div>
+                    <div className="departmentCardBody"><h3>{department}</h3><p>{templateReady ? `${count} KRI fields · ${frequency} reporting` : "KRI template to be provided"}</p>
+                      <span className={record ? `stateTag ${displayStatus(record).toLowerCase()}` : "stateTag"}>{record ? displayStatus(record) : templateReady ? "NOT STARTED" : "TEMPLATE PENDING"}</span>
+                    </div>
+                    {templateReady
+                      ? <button className="primaryBtn" onClick={() => openDepartment(department)}>{record ? "Open entry" : "Enter KRI data"} →</button>
+                      : <button className="secondaryBtn" disabled>Awaiting template</button>}
+                  </article>;
+                })}
+              </div>
+            </section>
+          </>}
+
           {tab === "Collection" && <>
             <section className="panel"><div className="panelHead"><div><small>STEP 01 · REPORTING CYCLE</small><h3>Create and track department requests</h3></div></div>
               <div className="formGrid"><label>Reporting period (Nepali calendar / bank period)<input value={period} onChange={e=>setPeriod(e.target.value)} /></label><label>Cycle start date (first day of applicable month)<input type="date" value={cycleDate} onChange={e=>setCycleDate(e.target.value)} /></label><label className="checkLabel"><input type="checkbox" checked={includeHR} onChange={e=>setIncludeHR(e.target.checked)}/> Include quarterly HR submission in this cycle</label></div>
@@ -240,15 +320,20 @@ export default function KriWorkspace() {
           {tab === "Department entry" && selected && <>
             <section className="panel"><div className="panelHead"><div><small>DEPARTMENT PORTAL · {selected.period}</small><h3>{selected.department} KRI submission</h3></div><span className={`stateTag ${selected.status.toLowerCase()}`}>{selected.status}</span></div>
               <p className="mutedText">Enter the values from the department's existing template. All fields below are saved in this browser as you work.</p>
-              {metrics.filter(m=>m.department===selected.department).map(m=>{const v=selected.values[m.id]??blankValue();return <div className="metricForm" key={m.id}><div className="metricFormHead"><b>{m.id} · {m.name}</b><span>{m.unit}</span></div><div className="formGrid"><label>Actual value<input type="number" step="any" value={v.actual} onChange={e=>updateValue(selected.id,m.id,"actual",e.target.value)} /></label>{m.department!=="Human Resources"&&<label>Downtime occurred?<select value={v.occurred} onChange={e=>updateValue(selected.id,m.id,"occurred",e.target.value)}><option value="">Select</option><option>Yes</option><option>No</option></select></label>}{m.department!=="Human Resources"&&<label>Location / affected service<input value={v.location} onChange={e=>updateValue(selected.id,m.id,"location",e.target.value)} /></label>}<label>Remarks / explanation<input value={v.remarks} onChange={e=>updateValue(selected.id,m.id,"remarks",e.target.value)} /></label></div><p className="thresholdHint">{m.id==="HR-01" ? `Green < ${m.appetite}% · Amber > ${m.appetite}% to ${m.tolerance}% · Red > ${m.tolerance}% · exactly ${m.appetite}% not specified in source` : `Appetite: ${m.appetite} ${m.unit} · Tolerance: ${m.tolerance} ${m.unit}`} · {m.approved?"Approved limit marked":"Illustrative limit – approval pending"}</p></div>})}
-              <div className="actionRow"><button className="primaryBtn" onClick={()=>submitDepartment(selected)} disabled={selected.status==="APPROVED"}>Submit to ORMD for review</button><button className="secondaryBtn" onClick={()=>{setSelectedId("");setTab("Collection");}}>Back to tracker</button></div>
+              {metrics.filter(m=>m.department===selected.department).map(m=>{const v=selected.values[m.id]??blankValue();const locked=selected.status==="APPROVED"||selected.status==="SUBMITTED";return <div className="metricForm" key={m.id}><div className="metricFormHead"><b>{m.id} · {m.name}</b><span>{m.unit}</span></div><div className="formGrid">{m.id==="HR-01"?<><label>Resigned permanent staff<input type="number" min="0" step="1" disabled={locked} value={v.resignedStaff??""} onChange={e=>updateValue(selected.id,m.id,"resignedStaff",e.target.value)} /></label><label>Current number of staff<input type="number" min="1" step="1" disabled={locked} value={v.currentStaff??""} onChange={e=>updateValue(selected.id,m.id,"currentStaff",e.target.value)} /></label><label>Calculated turnover<input type="text" readOnly value={hrTurnover(v)===null?"":`${hrTurnover(v)!.toFixed(2)}%`} /></label></>:<><label>Actual value<input type="number" step="any" disabled={locked} value={v.actual} onChange={e=>updateValue(selected.id,m.id,"actual",e.target.value)} /></label><label>Downtime occurred?<select disabled={locked} value={v.occurred} onChange={e=>updateValue(selected.id,m.id,"occurred",e.target.value)}><option value="">Select</option><option>Yes</option><option>No</option></select></label><label>Location / affected service<input disabled={locked} value={v.location} onChange={e=>updateValue(selected.id,m.id,"location",e.target.value)} /></label></>}<label>Remarks / explanation<input disabled={locked} value={v.remarks} onChange={e=>updateValue(selected.id,m.id,"remarks",e.target.value)} /></label></div><p className="thresholdHint">{m.id==="HR-01" ? `Green < ${m.appetite}% · Amber ${m.appetite}% to ${m.tolerance}% · Red > ${m.tolerance}%` : `Green < ${m.appetite} ${m.unit} · Amber ${m.appetite} to < ${m.tolerance} ${m.unit} · Red ≥ ${m.tolerance} ${m.unit}`} · {m.approved?"Approved limit marked":"Illustrative limit – approval pending"}</p></div>})}
+              <div className="actionRow"><button className="primaryBtn" onClick={()=>submitDepartment(selected)} disabled={selected.status==="APPROVED"||selected.status==="SUBMITTED"}>Submit to ORMD for review</button><button className="secondaryBtn" onClick={()=>{setSelectedId("");setTab("Collection");}}>Back to tracker</button></div>
             </section>
           </>}
           {tab === "Department entry" && !selected && <section className="panel"><p className="emptyText">Select a department submission from Collection → Open.</p><button className="secondaryBtn" onClick={()=>setTab("Collection")}>Back to collection</button></section>}
 
-          {tab === "Review queue" && <section className="panel"><div className="panelHead"><div><small>STEP 03 · ORMD REVIEW</small><h3>Review submitted department returns</h3></div><span className="countBadge">{reviewQueue.length} awaiting review</span></div>
-            {reviewQueue.length===0?<p className="emptyText">No submissions are waiting for review. Submit a department return from the Collection workspace.</p>:reviewQueue.map(s=><article className="reviewCard" key={s.id}><div className="panelHead"><div><b>{s.department}</b><small>{s.period} · Submitted {fmt(s.submittedAt)}</small></div><span className="stateTag submitted">SUBMITTED</span></div><div className="tableScroll"><table><thead><tr><th>KRI</th><th>Actual</th><th>Appetite</th><th>Tolerance</th><th>Status</th><th>Threshold basis</th></tr></thead><tbody>{metrics.filter(m=>m.department===s.department).map(m=>{const v=s.values[m.id]??blankValue();return <tr key={m.id}><td>{m.name}</td><td>{v.actual} {m.unit}</td><td>{m.appetite}</td><td>{m.tolerance}</td><td><span className={`ragTag ${statusFor(m,v.actual).toLowerCase()}`}>{statusFor(m,v.actual)}</span></td><td>{m.approved?"Marked approved":"Illustrative / pending approval"}</td></tr>})}</tbody></table></div><label className="reviewNote">ORMD review comments<textarea value={selectedId===s.id?reviewNote:""} onFocus={()=>setSelectedId(s.id)} onChange={e=>setReviewNote(e.target.value)} placeholder="Record review comments or required correction…" /></label><div className="actionRow"><button className="primaryBtn" onClick={()=>review(s,"APPROVED")}>Approve submission</button><button className="secondaryBtn" onClick={()=>review(s,"RETURNED")}>Return for correction</button></div></article>)}
-          </section>}
+          {tab === "Review queue" && <>
+            <section className="panel"><div className="panelHead"><div><small>STEP 03 · ORMD REVIEW</small><h3>Review submitted department returns</h3></div><span className="countBadge">{reviewQueue.length} awaiting review</span></div>
+              {reviewQueue.length===0?<p className="emptyText">No submissions are waiting for review. Submit a department return from the Collection workspace.</p>:reviewQueue.map(s=><article className="reviewCard" key={s.id}><div className="panelHead"><div><b>{s.department}</b><small>{s.period} · Submitted {fmt(s.submittedAt)}</small></div><span className="stateTag submitted">SUBMITTED</span></div><div className="tableScroll"><table><thead><tr><th>KRI</th><th>Actual</th><th>Appetite</th><th>Tolerance</th><th>Status</th><th>Threshold basis</th></tr></thead><tbody>{metrics.filter(m=>m.department===s.department).map(m=>{const v=s.values[m.id]??blankValue();return <tr key={m.id}><td>{m.name}</td><td>{v.actual} {m.unit}{m.id==="HR-01"&&v.resignedStaff?` (${v.resignedStaff} resigned / ${v.currentStaff} staff)`:""}</td><td>{m.appetite}</td><td>{m.tolerance}</td><td><span className={`ragTag ${statusFor(m,v.actual).toLowerCase()}`}>{statusFor(m,v.actual)}</span></td><td>{m.approved?"Marked approved":"Illustrative / pending approval"}</td></tr>})}</tbody></table></div><label className="reviewNote">ORMD review comments<textarea value={selectedId===s.id?reviewNote:""} onFocus={()=>setSelectedId(s.id)} onChange={e=>setReviewNote(e.target.value)} placeholder="Record review comments or required correction…" /></label><div className="actionRow"><button className="primaryBtn" onClick={()=>review(s,"APPROVED")}>Approve submission</button><button className="secondaryBtn" onClick={()=>review(s,"RETURNED")}>Return for correction</button></div></article>)}
+            </section>
+            <section className="panel"><div className="panelHead"><div><small>APPROVED SUBMISSIONS</small><h3>Reopen a submission for correction</h3></div><span className="countBadge">{approvedSubmissions.length} approved</span></div>
+              {approvedSubmissions.length===0?<p className="emptyText">Approved submissions will appear here. ORMD can reopen one if a correction is needed.</p>:approvedSubmissions.map(s=><article className="trackerRow" key={s.id}><div><b>{s.department}</b><small>{s.period} · Approved {fmt(s.reviewedAt)}</small></div><button className="smallBtn" onClick={()=>reopenSubmission(s)}>Reopen for correction</button></article>)}
+            </section>
+          </>}
 
           {tab === "KRI inventory" && <section className="panel"><div className="panelHead"><div><small>MASTER DATA · KRI REGISTER</small><h3>Department KRI inventory and thresholds</h3></div><span className="countBadge">{metrics.length} indicators</span></div><p className="mutedText">Inventory items are based on the supplied IT, Digital Banking and HR templates. The limits below are demonstration values, not approved bank thresholds. Edit them only after confirmation from the approved KRI methodology.</p>
             <div className="tableScroll"><table><thead><tr><th>Code / Department</th><th>KRI</th><th>Appetite</th><th>Tolerance</th><th>Risk direction</th><th>Approval status</th></tr></thead><tbody>{metrics.map(m=><tr key={m.id}><td><b>{m.id}</b><small>{m.department}</small></td><td>{m.name}<small>{m.unit}</small></td><td><input className="tableInput" type="number" value={m.appetite} onChange={e=>updateMetric(m.id,"appetite",Number(e.target.value))}/></td><td><input className="tableInput" type="number" value={m.tolerance} onChange={e=>updateMetric(m.id,"tolerance",Number(e.target.value))}/></td><td><select className="tableSelect" value={m.direction} onChange={e=>updateMetric(m.id,"direction",e.target.value)}><option value="HIGHER">Higher = more risk</option><option value="LOWER">Lower = more risk</option></select></td><td><label className="approveCheck"><input type="checkbox" checked={m.approved} onChange={e=>updateMetric(m.id,"approved",e.target.checked)}/> Confirmed</label><small>{m.source}</small></td></tr>)}</tbody></table></div>

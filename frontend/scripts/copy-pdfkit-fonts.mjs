@@ -10,3 +10,4 @@ await mkdir(destination, { recursive: true });
 await cp(source, destination, { recursive: true, force: true });
 
 console.log("Copied PDFKit AFM font metrics into the KRI report route bundle.");
+
