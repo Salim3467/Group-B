@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type Department = "IT" | "Digital Banking" | "HR";
+type Department = "IT" | "Digital Banking" | "HR" | "SME & MF Lending" | "Finance Department" | "Central Trade Operation" | "Risk Department";
 type Entry = { yesNo: string; location: string; hours: string; remarks: string };
 type WorkflowValue = { actual: string; occurred: string; location: string; remarks: string; resignedStaff?: string; currentStaff?: string };
 type WorkflowSubmission = {
@@ -25,10 +25,28 @@ const sourceItems = {
   HR: [{ group: "Operational Risk Matrices", items: ["Employee Turnover"] }],
 } as const;
 
+const hoUnits: { id: Department; name: string; code: string; frequency: string }[] = [
+  { id: "IT", name: "Information Technology", code: "IT", frequency: "Monthly" },
+  { id: "Digital Banking", name: "Digital Banking", code: "DG", frequency: "Monthly" },
+  { id: "HR", name: "Human Resources", code: "HR", frequency: "Quarterly" },
+  { id: "SME & MF Lending", name: "SME & MF Lending", code: "SME", frequency: "Template pending" },
+  { id: "Finance Department", name: "Finance Department", code: "FIN", frequency: "Template pending" },
+  { id: "Central Trade Operation", name: "Central Trade Operation", code: "CTO", frequency: "Template pending" },
+  { id: "Risk Department", name: "Risk Department", code: "RISK", frequency: "Template pending" },
+];
+
+type TemplateDepartment = keyof typeof sourceItems;
+function hasTemplate(department: Department | null): department is TemplateDepartment {
+  return department === "IT" || department === "Digital Banking" || department === "HR";
+}
+function unitName(department: Department) {
+  return hoUnits.find(unit => unit.id === department)?.name ?? department;
+}
+
 const emptyEntry = (): Entry => ({ yesNo: "", location: "", hours: "", remarks: "" });
 
 export default function DepartmentPortal() {
-  const [department, setDepartment] = useState<Department>("IT");
+  const [department, setDepartment] = useState<Department | null>(null);
   const [period, setPeriod] = useState("2083/08");
   const [entries, setEntries] = useState<Record<string, Entry>>({});
   const [hrResigned, setHrResigned] = useState("");
@@ -37,6 +55,10 @@ export default function DepartmentPortal() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    if (!hasTemplate(department)) {
+      setEntries({}); setHrResigned(""); setHrCurrent(""); setHrRemarks("");
+      return;
+    }
     try {
       const store = JSON.parse(localStorage.getItem("kri-central-demo-v2") || "{}") as WorkflowStore;
       const departmentName = department === "IT" ? "Information Technology" : department === "HR" ? "Human Resources" : department;
@@ -73,6 +95,7 @@ export default function DepartmentPortal() {
   }
 
   function save() {
+    if (!hasTemplate(department)) { setMessage("A department KRI template has not been provided yet."); return; }
     const items = sourceItems[department].flatMap(group => [...group.items]);
     if (department !== "HR") {
       const missing = items.filter(name => {
@@ -130,6 +153,7 @@ export default function DepartmentPortal() {
   }
 
   function exportCsv() {
+    if (!hasTemplate(department)) { setMessage("A department KRI template has not been provided yet."); return; }
     const quote = (v: unknown) => '"' + String(v ?? "").replaceAll('"', '""') + '"';
     const rows: unknown[][] = [["Department", "Period", "KRI Title", "Yes/No", "Location", "Total Hours During the Month", "Resigned Permanent Staff", "Current Number of Staff", "Calculated Turnover %", "Remarks"]];
     if (department === "HR") {
@@ -151,19 +175,40 @@ export default function DepartmentPortal() {
       <div style={{maxWidth:1050,margin:"0 auto"}}>
         <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap",marginBottom:22}}>
           <a href="/" style={{color:"#176f6b",fontWeight:800,textDecoration:"none"}}>← NABIL KRI MANAGEMENT</a>
-          <span style={{fontSize:12,color:"#6d7f8b"}}>Head Office · Department reporting portal</span>
+          <span style={{fontSize:12,color:"#6d7f8b"}}>Head Office · HO Units</span>
+          {department && <button onClick={()=>{setDepartment(null);setMessage("");}} style={secondaryButton}>← All HO Units</button>}
           <a href="/kri-workspace" style={{color:"#176f6b",fontWeight:800,textDecoration:"none"}}>Open KRI workspace →</a>
         </header>
+        {department === null ? (
+          <section style={{background:"#fff",border:"1px solid #e1e8ed",borderRadius:14,padding:24,boxShadow:"0 8px 28px #18394f0b"}}>
+            <p style={{fontSize:11,fontWeight:800,letterSpacing:1.3,color:"#168078"}}>HEAD OFFICE UNITS</p>
+            <h1 style={{fontSize:27,margin:"8px 0"}}>Choose a department</h1>
+            <p style={{fontSize:13,color:"#687c89",lineHeight:1.6}}>Select an HO unit to open only that department’s KRI template.</p>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:14,marginTop:22}}>
+              {hoUnits.map(unit=>{
+                const ready=hasTemplate(unit.id);
+                return <button key={unit.id} onClick={()=>{setEntries({});setHrResigned("");setHrCurrent("");setHrRemarks("");setDepartment(unit.id);setMessage("");}} style={{textAlign:"left",background:"#fff",border:"1px solid #dfe8ec",borderRadius:11,padding:18,color:"#1c3547",cursor:"pointer",minHeight:128}}>
+                  <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:38,height:34,padding:"0 8px",borderRadius:8,background:"#eaf5ef",color:"#176f6b",fontSize:11,fontWeight:800}}>{unit.code}</span>
+                  <h2 style={{fontSize:16,margin:"14px 0 6px"}}>{unit.name}</h2>
+                  <span style={{fontSize:11,color:ready?"#28764f":"#8a681b",fontWeight:700}}>{ready?`${unit.frequency} · Template ready`:"Template pending"} →</span>
+                </button>;
+              })}
+            </div>
+            {message && <p role="status" style={{background:"#edf7f2",padding:12,borderRadius:8,fontSize:12,color:"#176344",lineHeight:1.5}}>{message}</p>}
+          </section>
+        ) : !hasTemplate(department) ? (
+          <section style={{background:"#fff",border:"1px solid #e1e8ed",borderRadius:14,padding:24,boxShadow:"0 8px 28px #18394f0b"}}>
+            <p style={{fontSize:11,fontWeight:800,letterSpacing:1.3,color:"#168078"}}>HO UNIT · TEMPLATE PENDING</p>
+            <h1 style={{fontSize:27,margin:"8px 0"}}>{unitName(department)}</h1>
+            <p style={{fontSize:13,color:"#687c89",lineHeight:1.6}}>This department is included in the HO Units list. Its KRI input template will appear here once you provide it.</p>
+          </section>
+        ) : (
         <section style={{background:"#fff",border:"1px solid #e1e8ed",borderRadius:14,padding:24,boxShadow:"0 8px 28px #18394f0b"}}>
           <p style={{fontSize:11,fontWeight:800,letterSpacing:1.3,color:"#168078"}}>DEPARTMENT DATA ENTRY</p>
-          <h1 style={{fontSize:27,margin:"8px 0"}}>Department KRI Submission</h1>
-          <p style={{fontSize:13,color:"#687c89",lineHeight:1.6}}>The fields below follow the uploaded Head Office department workbook. Select a department and reporting period with an open request. Submissions appear in the KRI workspace review queue.</p>
+          <h1 style={{fontSize:27,margin:"8px 0"}}>{unitName(department)} KRI Submission</h1>
+          <p style={{fontSize:13,color:"#687c89",lineHeight:1.6}}>This page shows only the {unitName(department)} template. Select a reporting period with an open request; submissions appear in the KRI workspace review queue.</p>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:14,margin:"22px 0"}}>
-            <label style={labelStyle}>Department
-              <select value={department} onChange={e=>{setDepartment(e.target.value as Department);setMessage("");}} style={inputStyle}>
-                <option value="IT">IT</option><option value="Digital Banking">Digital Banking (Digi)</option><option value="HR">HR</option>
-              </select>
-            </label>
+            <div style={labelStyle}>Selected HO unit<div style={{...inputStyle,display:"flex",alignItems:"center",fontWeight:700}}>{unitName(department)}</div></div>
             <label style={labelStyle}>{monthly ? "Reporting month" : "Reporting quarter"}
               <input value={period} onChange={e=>setPeriod(e.target.value)} placeholder={monthly ? "e.g. 2083/08" : "e.g. Q1 2083/84"} style={inputStyle}/>
             </label>
@@ -211,6 +256,7 @@ export default function DepartmentPortal() {
           </div>
           <p style={{fontSize:10,color:"#87959d",marginTop:18,lineHeight:1.6}}>Training prototype: submissions and reviews share this browser's local storage, not a central database. Use synthetic data only.</p>
         </section>
+        )}
       </div>
     </main>
   );
