@@ -1,10 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Department = "IT" | "Digital Banking" | "HR";
 type Entry = { yesNo: string; location: string; hours: string; remarks: string };
-type SavedRecord = { department: Department; period: string; entries: Record<string, Entry>; hrResigned: string; hrCurrent: string; hrRemarks: string; savedAt: string };
+type WorkflowValue = { actual: string; occurred: string; location: string; remarks: string; resignedStaff?: string; currentStaff?: string };
+type WorkflowSubmission = {
+  id: string; department: string; period: string; frequency: string; dueDate: string;
+  status: "REQUESTED" | "SUBMITTED" | "RETURNED" | "APPROVED"; requestedAt: string;
+  reminders: number; lastReminder: string; submittedAt: string; reviewedAt: string;
+  reviewerNote: string; values: Record<string, WorkflowValue>;
+};
+type WorkflowLog = { id: string; at: string; department: string; action: string; detail: string };
+type WorkflowStore = { metrics?: unknown[]; submissions?: WorkflowSubmission[]; logs?: WorkflowLog[] };
 
 const sourceItems = {
   IT: [
@@ -28,6 +36,31 @@ export default function DepartmentPortal() {
   const [hrRemarks, setHrRemarks] = useState("");
   const [message, setMessage] = useState("");
 
+  useEffect(() => {
+    try {
+      const store = JSON.parse(localStorage.getItem("kri-central-demo-v2") || "{}") as WorkflowStore;
+      const departmentName = department === "IT" ? "Information Technology" : department === "HR" ? "Human Resources" : department;
+      const submission = (store.submissions ?? []).find(item => item.department === departmentName && item.period === period);
+      if (!submission) {
+        setEntries({}); setHrResigned(""); setHrCurrent(""); setHrRemarks("");
+        return;
+      }
+      if (department === "HR") {
+        const value = submission.values["HR-01"];
+        setHrResigned(value?.resignedStaff ?? ""); setHrCurrent(value?.currentStaff ?? ""); setHrRemarks(value?.remarks ?? "");
+        return;
+      }
+      const prefix = department === "IT" ? "IT" : "DG";
+      const items = sourceItems[department].flatMap(group => [...group.items]);
+      setEntries(Object.fromEntries(items.map((name, index) => {
+        const value = submission.values[`${prefix}-${String(index + 1).padStart(2, "0")}`];
+        return [name, value ? { yesNo: value.occurred, location: value.location, hours: value.actual, remarks: value.remarks } : emptyEntry()];
+      })));
+    } catch {
+      setEntries({}); setHrResigned(""); setHrCurrent(""); setHrRemarks("");
+    }
+  }, [department, period]);
+
   const hrRatio = useMemo(() => {
     const resigned = Number(hrResigned);
     const current = Number(hrCurrent);
@@ -44,21 +77,56 @@ export default function DepartmentPortal() {
     if (department !== "HR") {
       const missing = items.filter(name => {
         const row = entries[name] ?? emptyEntry();
-        return !row.yesNo || row.hours.trim() === "";
+        const hours = Number(row.hours);
+        return !row.yesNo || row.hours.trim() === "" || !Number.isFinite(hours) || hours < 0;
       });
-      if (missing.length) { setMessage("Please complete Yes/No and Total Hours During the Month for every listed KRI."); return; }
-    } else if (hrResigned === "" || hrCurrent === "" || Number(hrCurrent) <= 0) {
+      if (missing.length) { setMessage("Enter Yes/No and a valid non-negative number of hours for every listed KRI."); return; }
+    } else if (hrResigned === "" || hrCurrent === "" || Number(hrResigned) < 0 || !Number.isInteger(Number(hrResigned)) || Number(hrCurrent) <= 0 || !Number.isInteger(Number(hrCurrent))) {
       setMessage("Enter both the number of resigned permanent staff and the current number of staff."); return;
     }
+    try {
+      const key = "kri-central-demo-v2";
+      const store = JSON.parse(localStorage.getItem(key) || "{}") as WorkflowStore;
+      const submissions = Array.isArray(store.submissions) ? store.submissions : [];
+      const departmentName = department === "IT" ? "Information Technology" : department === "HR" ? "Human Resources" : department;
+      const submissionIndex = submissions.findIndex(item => item.department === departmentName && item.period === period);
+      if (submissionIndex < 0) { setMessage("No request exists for this department and period. Create the collection cycle in the KRI workspace first."); return; }
+      const request = submissions[submissionIndex];
+      if (request.status !== "REQUESTED" && request.status !== "RETURNED") {
+        setMessage(request.status === "APPROVED" ? "This submission is approved and locked. Ask ORMD to reopen it before making corrections." : "This submission is already with ORMD for review.");
+        return;
+      }
 
-    const record: SavedRecord = {
-      department, period, entries: department === "HR" ? {} : Object.fromEntries(items.map(name => [name, entries[name] ?? emptyEntry()])),
-      hrResigned, hrCurrent, hrRemarks, savedAt: new Date().toISOString()
-    };
-    const key = "nabil-kri-department-submissions";
-    const prior = JSON.parse(localStorage.getItem(key) || "[]") as SavedRecord[];
-    localStorage.setItem(key, JSON.stringify([...prior, record]));
-    setMessage("Saved in this browser only. This demonstration does not transmit the submission to Risk Management.");
+      const values: Record<string, WorkflowValue> = { ...request.values };
+      if (department === "HR") {
+        values["HR-01"] = {
+          actual: hrRatio === null ? "" : hrRatio.toFixed(4), occurred: "", location: "", remarks: hrRemarks,
+          resignedStaff: hrResigned, currentStaff: hrCurrent
+        };
+      } else {
+        const prefix = department === "IT" ? "IT" : "DG";
+        items.forEach((name, index) => {
+          const entry = entries[name] ?? emptyEntry();
+          values[`${prefix}-${String(index + 1).padStart(2, "0")}`] = {
+            actual: entry.hours, occurred: entry.yesNo, location: entry.location, remarks: entry.remarks
+          };
+        });
+      }
+
+      const submittedAt = new Date().toISOString().slice(0, 10);
+      const updated = submissions.map((item, index) => index === submissionIndex
+        ? { ...item, values, status: "SUBMITTED" as const, submittedAt }
+        : item);
+      const log: WorkflowLog = {
+        id: `LOG-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        at: new Date().toLocaleString(), department: departmentName,
+        action: "Department submission received", detail: `Submission for ${period} sent to ORMD for review.`
+      };
+      localStorage.setItem(key, JSON.stringify({ ...store, submissions: updated, logs: [log, ...(store.logs ?? [])].slice(0, 100) }));
+      setMessage("Submitted to ORMD. It is now visible in the KRI workspace review queue in this browser.");
+    } catch {
+      setMessage("Could not save the submission in this browser. Reopen the KRI workspace and try again.");
+    }
   }
 
   function exportCsv() {
@@ -84,11 +152,12 @@ export default function DepartmentPortal() {
         <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap",marginBottom:22}}>
           <a href="/" style={{color:"#176f6b",fontWeight:800,textDecoration:"none"}}>← NABIL KRI MANAGEMENT</a>
           <span style={{fontSize:12,color:"#6d7f8b"}}>Head Office · Department reporting portal</span>
+          <a href="/kri-workspace" style={{color:"#176f6b",fontWeight:800,textDecoration:"none"}}>Open KRI workspace →</a>
         </header>
         <section style={{background:"#fff",border:"1px solid #e1e8ed",borderRadius:14,padding:24,boxShadow:"0 8px 28px #18394f0b"}}>
           <p style={{fontSize:11,fontWeight:800,letterSpacing:1.3,color:"#168078"}}>DEPARTMENT DATA ENTRY</p>
           <h1 style={{fontSize:27,margin:"8px 0"}}>Department KRI Submission</h1>
-          <p style={{fontSize:13,color:"#687c89",lineHeight:1.6}}>The fields below follow the uploaded Head Office department workbook. Select a department to display its own reporting format.</p>
+          <p style={{fontSize:13,color:"#687c89",lineHeight:1.6}}>The fields below follow the uploaded Head Office department workbook. Select a department and reporting period with an open request. Submissions appear in the KRI workspace review queue.</p>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:14,margin:"22px 0"}}>
             <label style={labelStyle}>Department
               <select value={department} onChange={e=>{setDepartment(e.target.value as Department);setMessage("");}} style={inputStyle}>
@@ -129,7 +198,7 @@ export default function DepartmentPortal() {
               </div>
               <label style={{...labelStyle,marginTop:14}}>Remarks <textarea value={hrRemarks} onChange={e=>setHrRemarks(e.target.value)} rows={3} style={{...inputStyle,resize:"vertical"}}/></label>
               <div style={{background:"#fff8e9",border:"1px solid #f0dfb9",borderRadius:8,padding:13,marginTop:15,fontSize:11,lineHeight:1.6,color:"#755a24"}}>
-                <b>Thresholds shown in the source workbook:</b> Tolerance Trigger Level: &gt;10%. Classifications: G: &lt;10%; A: &gt;10% to 12%; R: &gt;12%. The workbook does not clearly specify the classification at exactly 10% and 12%, so this portal does not automatically assign a risk colour.
+                <b>Thresholds shown in the source workbook:</b> Tolerance Trigger Level: &gt;10%. Classifications: G: &lt;10%; A: &gt;10% to 12%; R: &gt;12%. The source leaves exactly 10% undefined; for this training prototype it is provisionally treated as Amber. Exactly 12% is Amber under the source wording.
               </div>
               <p style={{fontSize:11,color:"#778994",lineHeight:1.6}}>The numeric cells in the source workbook are not imported as current reporting values because their row/column alignment is unclear.</p>
             </section>
@@ -137,10 +206,10 @@ export default function DepartmentPortal() {
 
           {message && <p role="status" style={{background:"#edf7f2",padding:12,borderRadius:8,fontSize:12,color:"#176344",lineHeight:1.5}}>{message}</p>}
           <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:24}}>
-            <button onClick={save} style={primaryButton}>Save submission in this browser</button>
+            <button onClick={save} style={primaryButton}>Submit to ORMD for review</button>
             <button onClick={exportCsv} style={secondaryButton}>Export current form to CSV</button>
           </div>
-          <p style={{fontSize:10,color:"#87959d",marginTop:18,lineHeight:1.6}}>Prototype limitation: submissions are stored only in this browser's local storage. There is no login, central database, or live transmission to Risk Management in this release. Do not enter confidential or live bank data.</p>
+          <p style={{fontSize:10,color:"#87959d",marginTop:18,lineHeight:1.6}}>Training prototype: submissions and reviews share this browser's local storage, not a central database. Use synthetic data only.</p>
         </section>
       </div>
     </main>

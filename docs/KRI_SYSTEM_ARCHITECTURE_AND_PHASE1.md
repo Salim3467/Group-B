@@ -24,7 +24,7 @@ The KRI workspace now demonstrates:
 5. **Department submission:** validation that all listed KRI values are entered before submission to ORMD.
 6. **ORMD review:** approve or return the departmental submission with comments.
 7. **KRI inventory:** maintain appetite/tolerance values, risk direction and a demonstration threshold-confirmation flag.
-8. **Risk assessment:** Green / Amber / Red using configured values. HR employee turnover follows the supplied classification: Green below 10%, Amber above 10% through 12%, Red above 12%. Exactly 10% is left as a threshold gap because the source template does not specify it.
+8. **Risk assessment:** Green / Amber / Red using configured values. HR employee turnover follows the supplied classification: Green below 10%, Amber from 10% through 12% for this training prototype, Red above 12%. The source template does not classify exactly 10%; the training choice is provisional.
 9. **Management reporting:** approved submissions only; PDF report and CSV export.
 10. **Activity log:** request, reminder, submission, review and report-generation events.
 
@@ -35,8 +35,8 @@ The dashboard at / provides a landing page and links into the KRI workspace at /
 - IT template indicators: Core Banking System, SWIFT, Email, Overall Data Centre and ATM downtime.
 - Digital Banking template indicators: Mobile Banking, Internet Banking, e@nabil, corporatePAY and ATM downtime.
 - HR template indicator: Employee Turnover.
-- IT and Digital Banking source templates do not provide approved Green/Amber/Red thresholds. Demonstration limits are populated only to allow an end-to-end screen demonstration and are explicitly marked unapproved.
-- HR source template indicates a trigger above 10%, Green below 10%, Amber above 10% to 12%, and Red above 12%. The exact 10% boundary is not defined in the source; the app flags it rather than silently assigning a band.
+- IT and Digital Banking source templates do not provide approved Green/Amber/Red thresholds. For training, the app provisionally uses below 5 hours for Green, 5 to below 7 for Amber, and 7 or more for Red; these limits are explicitly marked unapproved.
+- HR source template indicates a trigger above 10%, Green below 10%, Amber above 10% to 12%, and Red above 12%. The exact 10% boundary is not defined in the source; the training app provisionally classifies exactly 10% as Amber pending confirmation.
 - The HR calculation/formula in the source workbook still requires confirmation before production use.
 
 ## 4. Prototype persistence and integration boundaries
